@@ -1,36 +1,70 @@
+#include <ESP8266WiFi.h>
+#include <WiFiClient.h>
+#include <ESP8266WebServer.h>
+#include <WebSocketsServer.h>
+#include <Hash.h>
+#include <Servo.h>
+
+const char* ssid = "TP-Link_2.4GHz_A9BD15";
+//const char* ssid = "esp";
+
+
+
+const byte ENA = D5;
+const byte IN1 = D3;
+const byte IN2 = D2;
+const byte IN3 = D1;
+const byte IN4 = D0;
+const byte ENB = D7;
+const byte SERV = D4;
+
+
+const int hiz = 150;
+const int hizs = 100;
+const int turboHiz = 255;
+int currentHiz = hiz;
+
+
+char karakter = 'S';
+
+
+ESP8266WebServer server(80);
+WebSocketsServer webSocket = WebSocketsServer(81);
+
+
+Servo servoMotor;
+
+
+static const char PROGMEM INDEX_HTML[] = R"rawliteral(
 <!DOCTYPE html>
 <html lang="tr">
 
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="UTF-8">
-    <title>Wifi Robot Kontrol (MQTT)</title>
+    <title>Wifi Robot Kontrol</title>
     <style>
         body {
-            background-color: #808080; /* Gri arka plan */
+            background-color: #808080;
             font-family: Arial, sans-serif;
             text-align: center;
             color: #333;
             margin: 0;
-            padding: 10px; /* Kenarlara biraz boşluk */
+            padding: 10px;
         }
 
         h2 {
-            color: #EEE; /* Başlık rengi */
-            text-shadow: 1px 1px 2px #333; /* Başlığa gölge */
-        }
-        h3 {
-             color: #444; /* Bölüm başlıkları */
-             margin-bottom: 10px;
+            color: #EEE;
+            text-shadow: 1px 1px 2px #333;
         }
 
         .container {
-            max-width: 450px; /* Konteyner genişliği */
-            margin: 20px auto; /* Ortala */
-            background-color: #ffffff; /* Konteyner arka planı */
+            max-width: 450px;
+            margin: 20px auto;
+            background-color: #ffffff;
             padding: 20px;
-            border-radius: 20px; /* Yuvarlak köşeler */
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3); /* Gölge */
+            border-radius: 20px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
         }
 
         .button-grid {
@@ -39,15 +73,14 @@
             gap: 10px;
             justify-items: center;
             align-items: center;
-            margin-bottom: 10px; /* Alt boşluk */
         }
 
-        .button { /* Genel Yön Butonları */
+        .button {
             border: none;
             color: white;
             padding: 15px;
             font-size: 18px;
-            /* margin: 5px; */ /* Gap ile ayarlandı */
+            margin: 5px;
             cursor: pointer;
             border-radius: 12px;
             width: 100px;
@@ -57,118 +90,259 @@
             justify-content: center;
             transition: background-color 0.3s ease, transform 0.2s ease;
             box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
-            -webkit-tap-highlight-color: transparent; /* Dokunma vurgusunu kaldır */
-            user-select: none; /* Metin seçmeyi engelle */
         }
 
         .button:active {
-            transform: scale(0.9); /* Tıklama efekti */
+            transform: scale(0.9);
         }
 
-        .bcolor { /* Yön buton rengi */
-            background-color: #28a745; /* Yeşil */
+        .bcolor {
+            background-color: #28a745;
         }
-        .bcolor:hover { background-color: #218838; }
-        .bcolor:active { background-color: #1e7e34; }
 
-        /* Servo Kontrol Bölümü Stilleri */
+        .bcolor:hover {
+            background-color: #218838;
+        }
+
+        .bcolor:active {
+            background-color: #1e7e34;
+        }
+
         .servo-buttons {
-            display: flex; /* Butonları yan yana dizer */
-            flex-wrap: wrap; /* Sığmazsa alt satıra indir */
-            justify-content: center; /* Ortala */
-            gap: 10px; /* Butonlar arası boşluk */
-            margin-bottom: 15px; /* Alt boşluk */
+
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            justify-items: center;
+            align-items: center;
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid #ddd;
+
+
+
+
         }
 
-         /* Kaldırıldı - İşe yaramayan butonlar */
-        /* .servo-extra-buttons { ... } */
-        /* .degersizservo { ... } */
+        .servo-extra-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+        }
 
+        .degersizservo {
+            border: none;
+            color: white;
+            padding: 15px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 12px;
+            width: 120px;
+            height: 55px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #6c757d;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
 
-        /* Genel Kontrol Bölümü Çerçevesi */
+        .degersizservo:hover {
+            background-color: #5a6268;
+        }
+
+        .degersizservo:active {
+            background-color: #545b62;
+            transform: scale(0.95);
+        }
+
         .control-section {
-            border: 1px solid #ccc; /* Daha ince çerçeve */
+            border: 2px solid #555;
             border-radius: 12px;
             padding: 15px;
-            margin: 20px 0; /* Bölümler arası boşluk */
-            background-color: #f8f9fa; /* Açık gri arka plan */
+            margin: 15px 0;
+            background-color: #e0e0e0;
         }
 
-        /* Turbo Checkbox Stili */
         .turbo-control {
             text-align: center;
             margin-top: 15px;
-            padding: 10px;
         }
+
         .turbo-control label {
             font-weight: bold;
             margin-right: 10px;
             color: #333;
-            vertical-align: middle;
         }
+
         #turboCheckbox {
-            transform: scale(1.5); /* Checkbox'ı büyüt */
+            transform: scale(1.5);
             vertical-align: middle;
             cursor: pointer;
-            accent-color: #28a745; /* Checkbox işaret rengi */
+        }
+
+        input[type="checkbox"] {
+            accent-color: #28a745;
+
+
         }
 
 
-        /* Servo Açı Butonları */
+
+
         .acibutton {
             border: none;
             color: white;
-            padding: 10px 15px; /* Biraz daha küçük padding */
+            padding: 15px;
             font-size: 16px;
-           /* margin: 5px; */ /* Gap ile ayarlandı */
+            margin: 5px;
             cursor: pointer;
-            border-radius: 10px; /* Biraz daha az yuvarlak */
-            width: auto; /* İçeriğe göre genişlesin */
-            min-width: 60px; /* Minimum genişlik */
+            border-radius: 12px;
+            width: 90px;
             height: 50px;
-            display: inline-flex; /* Yan yana gelmesi için */
             align-items: center;
             justify-content: center;
-            background-color: #007bff; /* Mavi */
+            background-color: #007bff;
             transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
         }
-        .acibutton:hover { background-color: #0056b3; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3); }
-        .acibutton:active { background-color: #004085; transform: scale(0.95); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
 
-        /* Durum Mesajı */
-        #status {
-             margin-top: 10px;
-             margin-bottom: 15px;
-             font-weight: bold;
-             font-size: 1.1em;
+        .acibutton:hover {
+            background-color: #0056b3;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .acibutton:active {
+            background-color: #004085;
+            transform: scale(0.95);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
     </style>
-    <!-- MQTT.js Kütüphanesini CDN'den dahil et -->
-    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script>
+        var websock;
+
+        function sendCommand(cmd) {
+            if (websock && websock.readyState === WebSocket.OPEN) {
+                websock.send(cmd);
+            } else {
+
+            }
+        }
+
+
+        function setupMovementButton(id, cmd) {
+            var btn = document.getElementById(id);
+            if (!btn) return;
+
+            btn.addEventListener("mousedown", () => sendCommand(cmd));
+            btn.addEventListener("mouseup", () => sendCommand("S"));
+            btn.addEventListener("mouseleave", () => sendCommand("S"));
+
+            btn.addEventListener("touchstart", (e) => { e.preventDefault(); sendCommand(cmd); }, { passive: false });
+            btn.addEventListener("touchend", (e) => { e.preventDefault(); sendCommand("S"); }, { passive: false });
+            btn.addEventListener("touchcancel", (e) => { e.preventDefault(); sendCommand("S"); }, { passive: false });
+        }
+
+
+        function setupServoButton(id, cmd) {
+            var btn = document.getElementById(id);
+            if (!btn) return;
+            btn.addEventListener("click", () => sendCommand(cmd));
+        }
+
+
+        function setupTurboCheckbox() {
+            var turboCheck = document.getElementById('turboCheckbox');
+            if (!turboCheck) return;
+            turboCheck.addEventListener('change', function () {
+                if (this.checked) {
+                    sendCommand('T');
+                    console.log("Turbo aktiff");
+                } else {
+                    sendCommand('N');
+                    console.log("Turbo kapalı");
+                }
+            });
+        }
+
+
+        function setupKlavye() {
+            let keyHeld = {};
+            document.addEventListener("keydown", function (event) {
+                if (event.repeat) return;
+
+                let cmd = null;
+                switch (event.key) {
+                    case "ArrowUp": cmd = "b"; break;
+                    case "ArrowDown": cmd = "a"; break;
+                    case "ArrowLeft": cmd = "c"; break;
+                    case "ArrowRight": cmd = "d"; break;
+                    case "0": cmd = "0"; console.log("Servo 0 derece"); break;
+                    case "1": cmd = "1"; console.log("Servo 30 derece"); break;
+                    case "2": cmd = "2"; console.log("Servo 60 derece"); break;
+                    case "3": cmd = "3"; console.log("Servo 90 derece"); break;
+                    case "4": cmd = "4"; console.log("Servo 120 derece"); break;
+                }
+
+                if (cmd && !keyHeld[event.key]) {
+                    sendCommand(cmd);
+                    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
+                        keyHeld[event.key] = true;
+                    }
+                }
+            });
+
+            document.addEventListener("keyup", function (event) {
+                if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
+                    sendCommand("S");
+                    keyHeld[event.key] = false;
+                } else if (["0", "1", "2", "3", "4"].includes(event.key)) {
+                    keyHeld[event.key] = false;
+                }
+            });
+        }
+
+
+        window.onload = function () {
+            console.log("Websocket başlatılı...");
+            websock = new WebSocket('ws://' + window.location.hostname + ':81/');
+
+            websock.onopen = function (event) {
+                console.log("WebSocket bağlantı açıldı");
+
+                setupMovementButton("ileri", "b");
+                setupMovementButton("geri", "a");
+                setupMovementButton("sol", "c");
+                setupMovementButton("sag", "d");
+                setupServoButton("aci0", "0");
+                setupServoButton("aci30", "1");
+                setupServoButton("aci60", "2");
+                setupServoButton("aci90", "3");
+                setupServoButton("aci120", "4");
+                setupTurboCheckbox();
+                setupKlavye();
+            };
+            websock.onclose = function (event) { console.log("WebSocket connection closed"); };
+            websock.onerror = function (event) { console.log("WebSocket error:", event); };
+            websock.onmessage = function (event) { console.log("WebSocket message received:", event.data); };
+        };
+    </script>
 </head>
 
 <body>
     <div class="container">
-        <h2>Wifi Robot Kontrol (MQTT)</h2>
-
-        <div id="status" style="color: orange;">Durum: Bağlanılıyor...</div>
+        <h2>Wifi Robot Kontrol</h2>
 
         <div class="control-section">
             <h3>Yön Tuşları</h3>
             <div class="button-grid">
-                <div class="empty"></div> <!-- Boş hücre -->
-                <button id="dur" class="button bcolor">İleri</button>
-                <div class="empty"></div> <!-- Boş hücre -->
-                <button id="dur" class="button bcolor">Sol</button>
-                <!-- Geri butonu yerine Dur butonu daha mantıklı olabilir ortada -->
-                <button id="dur" class="button bcolor" style="background-color: #dc3545;">DUR</button>
-                <button id="dur" class="button bcolor">Sağ</button>
-                <div class="empty"></div> <!-- Boş hücre -->
-                <button id="dur" class="button bcolor">Geri</button>
-                <div class="empty"></div> <!-- Boş hücre -->
+                <div class="empty"></div>
+                <button id="ileri" class="button bcolor">İleri</button>
+                <div class="empty"></div>
+                <button id="sol" class="button bcolor">Sol</button>
+                <button id="geri" class="button bcolor">Geri</button>
+                <button id="sag" class="button bcolor">Sağ</button>
             </div>
         </div>
 
@@ -181,8 +355,10 @@
                 <button id="aci90" class="acibutton">90°</button>
                 <button id="aci120" class="acibutton">120°</button>
             </div>
-             <!-- İşe yaramayan butonlar kaldırıldı -->
-            <!-- <div class="servo-extra-buttons"> ... </div> -->
+            <div class="servo-extra-buttons">
+                <button id="sagadon" class="degersizservo">Sola Döndür</button>
+                <button id="soladon" class="degersizservo">Sağa Döndür</button>
+            </div>
         </div>
 
         <div class="control-section">
@@ -194,227 +370,217 @@
         </div>
 
     </div>
-
-    <script>
-        const statusElement = document.getElementById('status');
-
-        // --- MQTT Bağlantı Bilgileri ---
-        const brokerUrl = 'wss://36288b3a8cbb4d6f85c7ab5b43dc30db.s1.eu.hivemq.cloud:8884/mqtt';
-        const options = {
-            clientId: 'WebRobotControl_' + Date.now(), // Her seferinde benzersiz ID
-            username: 'hberks',
-            password: 'Berk0808',
-            clean: true,
-            connectTimeout: 5000 // 5 saniye
-        };
-        const robotTopic = 'robot/control'; // Komutların gönderileceği konu
-
-        let client = null; // MQTT istemcisi
-        let keyHeld = {};  // Klavye tuşlarının basılı tutulup tutulmadığını takip etmek için
-
-        // ---- MQTT Bağlantı Fonksiyonları ----
-        function connectToBroker() {
-            updateStatus('Bağlanılıyor...', 'orange');
-            console.log(`MQTT Broker'a bağlanılıyor: ${brokerUrl}`);
-
-            try {
-                client = mqtt.connect(brokerUrl, options);
-
-                client.on('connect', function () {
-                    updateStatus('Bağlandı!', 'green');
-                    console.log('MQTT Broker\'a başarıyla bağlandı.');
-                    setupEventHandlers(); // Bağlantı kurulunca buton ve klavye dinleyicilerini ayarla
-                });
-
-                client.on('error', function (err) {
-                    updateStatus('Bağlantı Hatası!', 'red');
-                    console.error('MQTT Bağlantı Hatası: ', err);
-                    if (client && client.end) client.end(true);
-                });
-
-                client.on('close', function () {
-                    updateStatus('Bağlantı Kesildi.', 'gray');
-                    console.log('MQTT Bağlantısı kapandı.');
-                    // Belki 5 saniye sonra tekrar bağlanmayı deneyebiliriz
-                    // setTimeout(connectToBroker, 5000);
-                });
-
-                client.on('offline', function () {
-                    updateStatus('Çevrimdışı.', 'gray');
-                    console.log('MQTT İstemcisi çevrimdışı.');
-                });
-
-            } catch (error) {
-                 updateStatus('İstemci oluşturma hatası!', 'red');
-                 console.error('MQTT İstemcisi oluşturulurken hata: ', error);
-            }
-        }
-
-        // ---- Komut Gönderme Fonksiyonu ----
-        function sendCommand(cmd) {
-            if (client && client.connected) {
-                console.log(`Gönderiliyor [${robotTopic}]: ${cmd}`);
-                client.publish(robotTopic, cmd, { qos: 0, retain: false }, (error) => {
-                    if (error) {
-                        console.error('Mesaj gönderme hatası:', error);
-                        updateStatus('Gönderme Hatası!', 'red');
-                    }
-                });
-            } else {
-                console.warn('Komut gönderilemedi - MQTT bağlı değil.');
-                updateStatus('Bağlı Değil!', 'red');
-            }
-        }
-
-        // ---- Durum Güncelleme Fonksiyonu ----
-        function updateStatus(message, color) {
-            if (statusElement) {
-                statusElement.textContent = 'Durum: ' + message;
-                statusElement.style.color = color;
-            }
-        }
-
-        // ---- Olay Dinleyici Ayarlama Fonksiyonları ----
-
-        // Hareket butonları (Basılı tutunca hareket et, bırakınca dur)
-        function setupMovementButton(id, cmd) {
-            var btn = document.getElementById(id);
-            if (!btn) return;
-
-            // Fare olayları
-            btn.addEventListener("mousedown", () => sendCommand(cmd));
-            btn.addEventListener("mouseup", () => sendCommand("S"));
-            btn.addEventListener("mouseleave", () => {
-                // Eğer fare butondan dışarı çıkarsa ve hala basılıysa dur komutu gönder
-                // (Bu basit bir kontrol, daha iyisi için basılı durumu takip etmek gerekir)
-                 sendCommand("S");
-            });
-
-            // Dokunmatik olayları (Mobil için)
-            btn.addEventListener("touchstart", (e) => { e.preventDefault(); sendCommand(cmd); }, { passive: false });
-            btn.addEventListener("touchend", (e) => { e.preventDefault(); sendCommand("S"); }, { passive: false });
-            btn.addEventListener("touchcancel", (e) => { e.preventDefault(); sendCommand("S"); }, { passive: false });
-        }
-
-        // Servo butonları (Tıklayınca komut gönder)
-        function setupServoButton(id, cmd) {
-            var btn = document.getElementById(id);
-            if (!btn) return;
-            btn.addEventListener("click", () => sendCommand(cmd));
-        }
-
-        // Dur butonu (Tıklayınca S gönder)
-        function setupStopButton(id) {
-            var btn = document.getElementById(id);
-             if (!btn) return;
-             btn.addEventListener("click", () => sendCommand("S"));
-        }
-
-        // Turbo checkbox
-        function setupTurboCheckbox() {
-            var turboCheck = document.getElementById('turboCheckbox');
-            if (!turboCheck) return;
-            turboCheck.addEventListener('change', function () {
-                const cmd = this.checked ? 'T' : 'N';
-                sendCommand(cmd);
-                console.log("Turbo modu: " + (this.checked ? 'Aktif' : 'Kapalı'));
-            });
-        }
-
-        // Klavye Kontrolleri
-        function setupKlavye() {
-            document.addEventListener("keydown", function (event) {
-                // Input veya textarea içindeyken klavye kontrolünü devre dışı bırak
-                if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
-                    return;
-                }
-                if (event.repeat) return; // Tuş tekrarını engelle
-
-                let cmd = null;
-                let isMovementKey = false;
-
-                switch (event.key) {
-                    case "ArrowUp": case "w": case "W": cmd = "b"; isMovementKey = true; break;
-                    case "ArrowDown": case "s": case "S": cmd = "a"; isMovementKey = true; break;
-                    case "ArrowLeft": case "a": case "A": cmd = "c"; isMovementKey = true; break; // Eski kodda d idi, c yaptık
-                    case "ArrowRight": case "d": case "D": cmd = "d"; isMovementKey = true; break; // Eski kodda c idi, d yaptık
-                    case "0": cmd = "0"; console.log("Servo 0 derece"); break;
-                    case "1": cmd = "1"; console.log("Servo 30 derece"); break;
-                    case "2": cmd = "2"; console.log("Servo 60 derece"); break;
-                    case "3": cmd = "3"; console.log("Servo 90 derece"); break;
-                    case "4": cmd = "4"; console.log("Servo 120 derece"); break;
-                    case " ": cmd = "S"; console.log("DUR (Boşluk)"); break; // Boşluk tuşuyla dur
-                    case "t": case "T": // Turbo checkbox'ını değiştir ve komut gönder
-                         var turboCheck = document.getElementById('turboCheckbox');
-                         if(turboCheck) {
-                             turboCheck.checked = !turboCheck.checked;
-                             // 'change' olayını manuel tetikle
-                             turboCheck.dispatchEvent(new Event('change'));
-                         }
-                         break; // Komut göndermeye gerek yok, change olayı halledecek
-                }
-
-                // Sadece daha önce basılmamışsa ve komut varsa gönder
-                if (cmd && !keyHeld[event.key]) {
-                    sendCommand(cmd);
-                    // Sadece hareket tuşlarını ve boşluğu basılı tutuluyor olarak işaretle
-                    if (isMovementKey || event.key === " ") {
-                         keyHeld[event.key] = true;
-                    }
-                }
-            });
-
-            document.addEventListener("keyup", function (event) {
-                 // Input veya textarea içindeyken dikkate alma
-                 if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
-                     return;
-                 }
-
-                let isMovementKey = false;
-                switch (event.key) {
-                    case "ArrowUp": case "w": case "W": isMovementKey = true; break;
-                    case "ArrowDown": case "s": case "S": isMovementKey = true; break;
-                    case "ArrowLeft": case "a": case "A": isMovementKey = true; break;
-                    case "ArrowRight": case "d": case "D": isMovementKey = true; break;
-                    case " ": isMovementKey = true; break; // Boşluk da hareket gibi kabul edilebilir
-                }
-
-                // Eğer bir hareket tuşu veya boşluk bırakıldıysa DUR komutu gönder
-                if (isMovementKey && keyHeld[event.key]) {
-                    sendCommand("S");
-                }
-                 // Tuşun basılı olmadığını işaretle
-                 keyHeld[event.key] = false;
-            });
-        }
-
-        // Tüm olay dinleyicilerini ayarlayan ana fonksiyon
-        function setupEventHandlers() {
-            console.log("Olay dinleyicileri ayarlanıyor...");
-            setupMovementButton("ileri", "b");
-            setupMovementButton("geri", "a");
-            setupMovementButton("sol", "c"); // HTML id ile eşleşmeli
-            setupMovementButton("sag", "d"); // HTML id ile eşleşmeli
-            setupStopButton("dur"); // Ortadaki DUR butonu
-            setupServoButton("aci0", "0");
-            setupServoButton("aci30", "1");
-            setupServoButton("aci60", "2");
-            setupServoButton("aci90", "3");
-            setupServoButton("aci120", "4");
-            setupTurboCheckbox();
-            setupKlavye();
-            console.log("Olay dinleyicileri ayarlandı.");
-        }
-
-        // ---- Sayfa Yüklendiğinde Başlat ----
-        window.onload = function () {
-            console.log("Sayfa yüklendi. MQTT bağlantısı başlatılıyor...");
-            connectToBroker();
-        };
-    </script>
-</head>
-
-<body>
-    <!-- HTML içeriği yukarıda tanımlandı -->
 </body>
+
 </html>
+)rawliteral";
+
+
+void webSocketFonksiyonu(byte num, WStype_t type, uint8_t * payload, size_t length);
+void handleRoot();
+void setupWiFi();
+void setupPins();
+void setupServer();
+void setupWebSocket();
+void stopMotors();
+
+
+void setup() {
+  Serial.begin(9600);
+  Serial.println("\nESP8266 Robot Baslatiliyor...");
+
+  setupPins();
+  setupWiFi();
+  setupServer();
+  setupWebSocket();
+
+  Serial.println("Kurulum Tamamlandi. Kontrol Hazir.");
+}
+
+
+void loop() {
+  webSocket.loop();
+  server.handleClient();
+
+
+  switch (karakter) {
+    case 'b': // ileri
+      digitalWrite(IN1, HIGH);
+      digitalWrite(IN2, LOW);
+      digitalWrite(IN3, HIGH);
+      digitalWrite(IN4, LOW);
+      analogWrite(ENA, currentHiz);
+      analogWrite(ENB, currentHiz);
+      break;
+    case 'a': // geri
+      digitalWrite(IN1, LOW);
+      digitalWrite(IN2, HIGH);
+      digitalWrite(IN3, LOW);
+      digitalWrite(IN4, HIGH);
+      analogWrite(ENA, currentHiz);
+      analogWrite(ENB, currentHiz);
+      break;
+    case 'c': // sol (Sol geri, Sag ileri)
+      digitalWrite(IN1, LOW);
+      digitalWrite(IN2, HIGH);
+      digitalWrite(IN3, HIGH);
+      digitalWrite(IN4, LOW);
+      analogWrite(ENA, hizs);
+      analogWrite(ENB, hizs);
+      break;
+    case 'd': // sag (Sol ileri, Sag geri)
+      digitalWrite(IN1, HIGH);
+      digitalWrite(IN2, LOW);
+      digitalWrite(IN3, LOW);
+      digitalWrite(IN4, HIGH);
+      analogWrite(ENA, hizs);
+      analogWrite(ENB, hizs);
+      break;
+    case 'S': // Dur
+      stopMotors();
+      break;
+
+    case '0':
+      servoMotor.write(0);
+      karakter = 'Z'; // Prevent motor stop after servo command
+      break;
+    case '1':
+      servoMotor.write(30);
+      karakter = 'Z';
+      break;
+    case '2':
+      servoMotor.write(60);
+      karakter = 'Z';
+      break;
+    case '3':
+      servoMotor.write(90);
+      karakter = 'Z';
+      break;
+    case '4':
+      servoMotor.write(120);
+      karakter = 'Z';
+      break;
+
+    default:
+      // Do nothing for other characters like 'T', 'N', 'Z' etc.
+      // Motors continue with previous state unless 'S' is received
+      break;
+  }
+
+}
+
+void stopMotors() {
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, LOW);
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, LOW);
+    analogWrite(ENA, 0);
+    analogWrite(ENB, 0);
+}
+
+
+void webSocketFonksiyonu(byte num, WStype_t type, uint8_t * payload, size_t length) {
+  switch (type) {
+    case WStype_DISCONNECTED:
+      Serial.printf("[%u] Baglanti Kesildi!\n", num);
+      karakter = 'S';
+      stopMotors();
+      break;
+    case WStype_CONNECTED:
+      {
+        IPAddress ip = webSocket.remoteIP(num);
+        Serial.printf("[%u] Baglanti Kuruldu: %d.%d.%d.%d\n", num, ip[0], ip[1], ip[2], ip[3]);
+      }
+      break;
+    case WStype_TEXT:
+      if (length > 0) {
+         char receivedChar = (char)payload[0];
+         Serial.printf("[%u] Gelen Komut: %c\n", num, receivedChar);
+
+
+         if (receivedChar == 'T') {
+            currentHiz = turboHiz;
+            Serial.println("Turbo Aktif!");
+
+         } else if (receivedChar == 'N') {
+            currentHiz = hiz;
+            Serial.println("Turbo Kapali!");
+
+         } else {
+
+            karakter = receivedChar;
+         }
+      }
+      break;
+    case WStype_BIN:
+      Serial.printf("[%u] Ikili veri alindi, uzunluk: %u\n", num, length);
+
+      break;
+    case WStype_ERROR:
+    case WStype_FRAGMENT_TEXT_START:
+    case WStype_FRAGMENT_BIN_START:
+    case WStype_FRAGMENT:
+    case WStype_FRAGMENT_FIN:
+    case WStype_PING:
+    case WStype_PONG:
+
+        break;
+  }
+}
+
+
+void setupPins() {
+  Serial.println("Pinler ayarlaniyor...");
+  pinMode(ENA, OUTPUT);
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+  pinMode(ENB, OUTPUT);
+  servoMotor.attach(SERV);
+  servoMotor.write(90);
+
+  stopMotors();
+  currentHiz = hiz;
+  Serial.println("Pinler ayarlandi.");
+}
+
+void setupWiFi() {
+  Serial.printf("WiFi agina baglaniliyor: %s\n", ssid);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid);
+
+  unsigned long startTime = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - startTime < 30000) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\nWiFi Baglantisi Basarili!");
+    Serial.print("IP Adresi: ");
+    Serial.println(WiFi.localIP());
+  } else {
+    Serial.println("\nWiFi Baglantisi Basarisiz! AP Moduna geciliyor (Opsiyonel)...");
+
+  }
+}
+
+void handleRoot() {
+  server.send_P(200, "text/html", INDEX_HTML);
+}
+
+void setupServer() {
+  Serial.println("HTTP Sunucu baslatiliyor...");
+  server.on("/", HTTP_GET, handleRoot);
+
+  server.begin();
+  Serial.println("HTTP Sunucu calisiyor.");
+}
+
+void setupWebSocket() {
+  Serial.println("WebSocket Sunucu baslatiliyor...");
+  webSocket.begin();
+  webSocket.onEvent(webSocketFonksiyonu);
+  Serial.println("WebSocket Sunucu calisiyor (Port 81).");
+}
