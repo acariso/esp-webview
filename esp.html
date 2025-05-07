@@ -76,44 +76,6 @@
             background-color: #1e7e34;
         }
 
-        .servo-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .acibutton {
-            border: none;
-            color: white;
-            padding: 10px 15px;
-            font-size: 16px;
-            cursor: pointer;
-            border-radius: 10px;
-            width: auto;
-            min-width: 60px;
-            height: 50px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #007bff;
-            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            user-select: none;
-        }
-
-        .acibutton:hover {
-            background-color: #0056b3;
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-        }
-
-        .acibutton:active {
-            background-color: #004085;
-            transform: scale(0.95);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
         .control-section {
             border: 1px solid #ccc;
             border-radius: 12px;
@@ -154,25 +116,10 @@
                 padding: 15px;
             }
 
-            .button-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
             .button {
                 width: 80px;
                 height: 50px;
                 font-size: 16px;
-            }
-
-            .acibutton {
-                min-width: 50px;
-                font-size: 14px;
-                height: 45px;
-            }
-
-            .servo-buttons {
-                flex-direction: column;
-                align-items: center;
             }
 
             .turbo-control {
@@ -181,23 +128,8 @@
         }
 
         @media (max-width: 480px) {
-            .button-grid {
-                grid-template-columns: 1fr;
-            }
-
             .button {
                 width: 100%;
-            }
-
-            .acibutton {
-                width: 100%;
-                font-size: 14px;
-                height: 45px;
-            }
-
-            .servo-buttons {
-                flex-direction: column;
-                align-items: stretch;
             }
         }
     </style>
@@ -226,23 +158,13 @@
         </div>
 
         <div class="control-section">
-            <h3>Servo Kontrol</h3>
-            <div class="servo-buttons">
-                <button id="aci0" class="acibutton">0°</button>
-                <button id="aci30" class="acibutton">30°</button>
-                <button id="aci60" class="acibutton">60°</button>
-                <button id="aci90" class="acibutton">90°</button>
-                <button id="aci120" class="acibutton">120°</button>
-            </div>
-        </div>
-
-        <div class="control-section">
             <h3>Ayarlar</h3>
             <div class="turbo-control">
                 <label for="turboCheckbox">Turbo Modu:</label>
                 <input type="checkbox" id="turboCheckbox">
             </div>
         </div>
+    </div>
     <script>
         const statusElement = document.getElementById('status');
 
@@ -331,12 +253,6 @@
             btn.addEventListener("touchcancel", (e) => { e.preventDefault(); sendCommand("S"); }, { passive: false });
         }
 
-        function setupServoButton(id, cmd) {
-            var btn = document.getElementById(id);
-            if (!btn) return;
-            btn.addEventListener("click", () => sendCommand(cmd));
-        }
-
         function setupStopButton(id) {
             var btn = document.getElementById(id);
              if (!btn) return;
@@ -368,11 +284,6 @@
                     case "ArrowDown": case "s": case "S": cmd = "a"; isMovementKey = true; break;
                     case "ArrowLeft": case "a": case "A": cmd = "c"; isMovementKey = true; break;
                     case "ArrowRight": case "d": case "D": cmd = "d"; isMovementKey = true; break;
-                    case "0": cmd = "0"; console.log("Servo 0 derece"); break;
-                    case "1": cmd = "1"; console.log("Servo 30 derece"); break;
-                    case "2": cmd = "2"; console.log("Servo 60 derece"); break;
-                    case "3": cmd = "3"; console.log("Servo 90 derece"); break;
-                    case "4": cmd = "4"; console.log("Servo 120 derece"); break;
                     case " ": cmd = "S"; console.log("DUR (Boşluk)"); break;
                     case "t": case "T":
                          var turboCheck = document.getElementById('turboCheckbox');
@@ -419,11 +330,6 @@
             setupMovementButton("sol", "c");
             setupMovementButton("sag", "d");
             setupStopButton("dur");
-            setupServoButton("aci0", "0");
-            setupServoButton("aci30", "1");
-            setupServoButton("aci60", "2");
-            setupServoButton("aci90", "3");
-            setupServoButton("aci120", "4");
             setupTurboCheckbox();
             setupKlavye();
             console.log("Olay dinleyicileri ayarlandı.");
