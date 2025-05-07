@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="UTF-8">
     <title>Wifi Robot Kontrol (MQTT)</title>
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
     <style>
         body {
             background-color: #808080;
@@ -13,6 +14,19 @@
             color: #333;
             margin: 0;
             padding: 10px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 450px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+            flex-grow: 1;
         }
 
         h2 {
@@ -23,15 +37,6 @@
         h3 {
             color: #444;
             margin-bottom: 10px;
-        }
-
-        .container {
-            max-width: 450px;
-            margin: 20px auto;
-            background-color: #ffffff;
-            padding: 20px;
-            border-radius: 20px;
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
         }
 
         .button-grid {
@@ -59,6 +64,11 @@
             box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
             user-select: none;
         }
+
+        .button:hover {
+            filter: brightness(1.1);
+        }
+
 
         .button:active {
             transform: scale(0.9);
@@ -110,6 +120,18 @@
             font-size: 1.1em;
         }
 
+         footer {
+            text-align: center;
+            
+            padding: 15px;
+            font-size: 0.9em;
+            color: rgb(255, 85, 116);
+        }
+
+        footer p {
+            margin: 0;
+        }
+
         @media (max-width: 768px) {
             .container {
                 width: 90%;
@@ -128,12 +150,28 @@
         }
 
         @media (max-width: 480px) {
+             .button-grid {
+                 grid-template-areas:
+                    ". ileri ."
+                    "sol dur sag"
+                    ". geri .";
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+            #ileri { grid-area: ileri; }
+            #sol { grid-area: sol; }
+            #dur { grid-area: dur; }
+            #sag { grid-area: sag; }
+            #geri { grid-area: geri; }
+
             .button {
                 width: 100%;
+                min-width: 70px;
+                height: 55px;
             }
         }
     </style>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
 </head>
 
 <body>
@@ -145,15 +183,15 @@
         <div class="control-section">
             <h3>Yön Tuşları</h3>
             <div class="button-grid">
-                <div class="empty"></div>
+                <div class="empty" style="grid-area: auto;"></div>
                 <button id="ileri" class="button bcolor">İleri</button>
-                <div class="empty"></div>
+                <div class="empty" style="grid-area: auto;"></div>
                 <button id="sol" class="button bcolor">Sol</button>
                 <button id="dur" class="button bcolor" style="background-color: #dc3545;">DUR</button>
                 <button id="sag" class="button bcolor">Sağ</button>
-                <div class="empty"></div>
+                <div class="empty" style="grid-area: auto;"></div>
                 <button id="geri" class="button bcolor">Geri</button>
-                <div class="empty"></div>
+                <div class="empty" style="grid-area: auto;"></div>
             </div>
         </div>
 
@@ -164,7 +202,11 @@
                 <input type="checkbox" id="turboCheckbox">
             </div>
         </div>
+        <footer>
+            <p> © Kametal</p>
+        </footer>
     </div>
+    
     <script>
         const statusElement = document.getElementById('status');
 
@@ -177,9 +219,11 @@
             connectTimeout: 5000
         };
         const robotTopic = 'robot/control';
+        const alertTopic = 'robot/alert';
 
         let client = null;
         let keyHeld = {};
+        let timerInterval;
 
         function connectToBroker() {
             updateStatus('Bağlanılıyor...', 'orange');
@@ -192,6 +236,41 @@
                     updateStatus('Bağlandı!', 'green');
                     console.log('MQTT Broker\'a başarıyla bağlandı.');
                     setupEventHandlers();
+                    client.subscribe(alertTopic, function (err) {
+                        if (!err) {
+                            console.log(`Başarıyla abone olundu: ${alertTopic}`);
+                        } else {
+                            console.error(`Abone olma hatası ${alertTopic}:`, err);
+                        }
+                    });
+                });
+
+                client.on('message', function (topic, payload) {
+                    const message = payload.toString();
+                    console.log(`Mesaj alındı [${topic}]: ${message}`);
+                    if (topic === alertTopic && message === "OBSTACLE_AHEAD") {
+                        Swal.fire({
+                          title: "Dikkat Engel!",
+                          html: "Robot bir engele yaklaştı ve durduruldu. <br>Kapanacak: <b></b> milisaniye.",
+                          timer: 3000,
+                          timerProgressBar: true,
+                          icon: 'warning',
+                          didOpen: () => {
+                            Swal.showLoading();
+                            const timer = Swal.getPopup().querySelector("b");
+                            timerInterval = setInterval(() => {
+                              timer.textContent = `${Swal.getTimerLeft()}`;
+                            }, 100);
+                          },
+                          willClose: () => {
+                            clearInterval(timerInterval);
+                          }
+                        }).then((result) => {
+                          if (result.dismiss === Swal.DismissReason.timer) {
+                            console.log("Engel uyarısı zamanlayıcı ile kapandı");
+                          }
+                        });
+                    }
                 });
 
                 client.on('error', function (err) {
@@ -341,5 +420,4 @@
         };
     </script>
 </body>
-
 </html>
