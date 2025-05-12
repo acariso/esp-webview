@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="UTF-8">
     <title>Wifi Robot Kontrol (MQTT)</title>
-    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
     <style>
         body {
             background-color: #808080;
@@ -14,19 +13,6 @@
             color: #333;
             margin: 0;
             padding: 10px;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        .container {
-            max-width: 450px;
-            margin: 20px auto;
-            background-color: #ffffff;
-            padding: 20px;
-            border-radius: 20px;
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-            flex-grow: 1;
         }
 
         h2 {
@@ -37,6 +23,15 @@
         h3 {
             color: #444;
             margin-bottom: 10px;
+        }
+
+        .container {
+            max-width: 450px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
         }
 
         .button-grid {
@@ -65,11 +60,6 @@
             user-select: none;
         }
 
-        .button:hover {
-            filter: brightness(1.1);
-        }
-
-
         .button:active {
             transform: scale(0.9);
         }
@@ -94,24 +84,67 @@
             background-color: #f8f9fa;
         }
 
-        .turbo-control {
-            text-align: center;
-            margin-top: 15px;
-            padding: 10px;
+        .settings-grid {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
         }
 
-        .turbo-control label {
+        .control-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .control-item label {
             font-weight: bold;
             margin-right: 10px;
             color: #333;
         }
 
-        #turboCheckbox {
+        .control-item input[type="checkbox"] {
             transform: scale(1.5);
             vertical-align: middle;
             cursor: pointer;
+        }
+        #turboCheckbox {
             accent-color: #28a745;
         }
+
+        .toggle-button {
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 12px;
+            min-width: 180px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+            user-select: none;
+        }
+        .toggle-button:active {
+            transform: scale(0.95);
+        }
+        .toggle-button.off {
+            background-color: #007BFF;
+        }
+        .toggle-button.off:hover {
+            background-color: #0056b3;
+        }
+        .toggle-button.on {
+            background-color: #28a745;
+        }
+        .toggle-button.on:hover {
+            background-color: #218838;
+        }
+
 
         #status {
             margin-top: 10px;
@@ -120,16 +153,122 @@
             font-size: 1.1em;
         }
 
-         footer {
-            text-align: center;
-            
-            padding: 15px;
-            font-size: 0.9em;
-            color: rgb(255, 85, 116);
+        .servo-slider-modern-wrapper {
+            position: relative;
+            width: 90%;
+            height: 20px;
+            margin: 25px auto;
+            display: flex;
+            align-items: center;
         }
 
-        footer p {
+        input[type=range]#servoSlider {
+            -webkit-appearance: none;
+            appearance: none;
+
+            --slider-fill-color: #28a745;
+            --slider-track-bg: #F0F0F7;
+            --slider-segment-line: #D1D1D6;
+            --slider-border-color: #C7C7CC;
+
+            width: 100%;
+            height: 100%;
             margin: 0;
+            padding: 0;
+            background-color: transparent;
+            background-image: repeating-linear-gradient(
+                to right,
+                var(--slider-track-bg),
+                var(--slider-track-bg) calc(16.666% - 1px),
+                var(--slider-segment-line) calc(16.666% - 1px),
+                var(--slider-segment-line) 16.666%
+            );
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 1px solid var(--slider-border-color);
+            box-shadow: inset 0 0.5px 1px rgba(0,0,0,0.05);
+        }
+
+        input[type=range]#servoSlider::-webkit-slider-runnable-track {
+            -webkit-appearance: none;
+            height: 100%;
+            background: transparent;
+            border-radius: 10px;
+        }
+
+        input[type=range]#servoSlider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 1px;
+            height: 100%;
+            background: transparent;
+            border: none;
+            box-shadow: -450px 0 0 450px var(--slider-fill-color);
+            cursor: pointer;
+        }
+
+        input[type=range]#servoSlider::-moz-range-track {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border-radius: 10px;
+            border: none;
+        }
+
+        input[type=range]#servoSlider::-moz-range-thumb {
+            -moz-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #FFFFFF;
+            border: 1.5px solid var(--slider-fill-color);
+            border-radius: 50%;
+            cursor: pointer;
+            position: relative;
+            z-index: 10;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+            margin-top: calc((20px - 18px) / 2 - 1.5px);
+        }
+
+        input[type=range]#servoSlider::-moz-range-progress {
+            background-color: var(--slider-fill-color);
+            height: 100%;
+            border-radius: 10px 0 0 10px;
+        }
+        input[type=range]#servoSlider[value="180"]::-moz-range-progress,
+        input[type=range]#servoSlider[value="0"]::-moz-range-progress {
+            border-radius: 10px;
+        }
+
+        .servo-value-display {
+            margin-top: 12px;
+            font-size: 1.15em;
+            font-weight: 600;
+            color: #343A40;
+        }
+
+        .servo-reset-button {
+            background-color: #dc3545;
+            color: white;
+            font-weight: 500;
+            border: none;
+            padding: 10px 20px;
+            font-size: 15px;
+            cursor: pointer;
+            border-radius: 8px;
+            margin-top: 18px;
+            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+            box-shadow: 0 3px 6px rgba(220, 53, 69, 0.3);
+        }
+        .servo-reset-button:hover {
+            background-color: #c82333;
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4);
+        }
+        .servo-reset-button:active {
+            background-color: #bd2130;
+            transform: scale(0.96);
+            box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
         }
 
         @media (max-width: 768px) {
@@ -137,41 +276,75 @@
                 width: 90%;
                 padding: 15px;
             }
-
+            .button-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
             .button {
                 width: 80px;
                 height: 50px;
                 font-size: 16px;
             }
-
-            .turbo-control {
-                padding: 8px;
+            .toggle-button {
+                font-size: 15px;
+                min-width: 160px;
+                height: 45px;
+            }
+            .servo-slider-modern-wrapper {
+                height: 18px;
+            }
+            input[type=range]#servoSlider,
+            input[type=range]#servoSlider::-webkit-slider-runnable-track,
+            input[type=range]#servoSlider::-moz-range-track,
+            input[type=range]#servoSlider::-moz-range-progress {
+                border-radius: 9px;
+            }
+            input[type=range]#servoSlider::-moz-range-thumb {
+                width: 16px;
+                height: 16px;
+                margin-top: calc((18px - 16px) / 2 - 1.5px);
+            }
+             .servo-reset-button {
+                padding: 9px 18px;
+                font-size: 14px;
             }
         }
 
         @media (max-width: 480px) {
-             .button-grid {
-                 grid-template-areas:
-                    ". ileri ."
-                    "sol dur sag"
-                    ". geri .";
-                grid-template-columns: 1fr 1fr 1fr;
+            .button-grid {
+                grid-template-columns: 1fr;
             }
-            #ileri { grid-area: ileri; }
-            #sol { grid-area: sol; }
-            #dur { grid-area: dur; }
-            #sag { grid-area: sag; }
-            #geri { grid-area: geri; }
-
             .button {
                 width: 100%;
-                min-width: 70px;
-                height: 55px;
+            }
+            .toggle-button {
+                font-size: 14px;
+                min-width: 150px;
+                height: 40px;
+                width: 80%;
+            }
+            .servo-slider-modern-wrapper {
+                height: 16px;
+                width: 88%;
+            }
+            input[type=range]#servoSlider,
+            input[type=range]#servoSlider::-webkit-slider-runnable-track,
+            input[type=range]#servoSlider::-moz-range-track,
+            input[type=range]#servoSlider::-moz-range-progress {
+                border-radius: 8px;
+            }
+            input[type=range]#servoSlider::-moz-range-thumb {
+                width: 14px;
+                height: 14px;
+                 margin-top: calc((16px - 14px) / 2 - 1.5px);
+            }
+             .servo-reset-button {
+                padding: 8px 16px;
+                font-size: 13px;
+                margin-top: 15px;
             }
         }
     </style>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
 </head>
 
 <body>
@@ -183,33 +356,41 @@
         <div class="control-section">
             <h3>Yön Tuşları</h3>
             <div class="button-grid">
-                <div class="empty" style="grid-area: auto;"></div>
+                <div class="empty"></div>
                 <button id="ileri" class="button bcolor">İleri</button>
-                <div class="empty" style="grid-area: auto;"></div>
+                <div class="empty"></div>
                 <button id="sol" class="button bcolor">Sol</button>
                 <button id="dur" class="button bcolor" style="background-color: #dc3545;">DUR</button>
                 <button id="sag" class="button bcolor">Sağ</button>
-                <div class="empty" style="grid-area: auto;"></div>
+                <div class="empty"></div>
                 <button id="geri" class="button bcolor">Geri</button>
-                <div class="empty" style="grid-area: auto;"></div>
+                <div class="empty"></div>
             </div>
         </div>
 
         <div class="control-section">
-            <h3>Ayarlar</h3>
-            <div class="turbo-control">
-                <label for="turboCheckbox">Turbo Modu:</label>
-                <input type="checkbox" id="turboCheckbox">
+            <h3>Servo Kontrol</h3>
+            <div class="servo-slider-modern-wrapper">
+                <input type="range" id="servoSlider" min="0" max="180" value="90" step="30">
+            </div>
+            <span id="servoValueDisplay" class="servo-value-display">0°</span>
+            <button id="servoResetButton" class="servo-reset-button">Sıfırla</button>
+        </div>
+
+        <div class="control-section">
+            <h3>Ayarlar & Ek Kontroller</h3>
+            <div class="settings-grid">
+                <div class="control-item">
+                    <label for="turboCheckbox">Turbo Modu:</label>
+                    <input type="checkbox" id="turboCheckbox">
+                </div>
+                <div class="control-item">
+                    <button id="suPompasibuton" class="toggle-button off">Su Fışkırt</button>
+                </div>
             </div>
         </div>
-        <footer>
-            <p> © Kametal</p>
-        </footer>
-    </div>
-    
     <script>
         const statusElement = document.getElementById('status');
-
         const brokerUrl = 'wss://36288b3a8cbb4d6f85c7ab5b43dc30db.s1.eu.hivemq.cloud:8884/mqtt';
         const options = {
             clientId: 'WebRobotControl_' + Date.now(),
@@ -219,76 +400,34 @@
             connectTimeout: 5000
         };
         const robotTopic = 'robot/control';
-        const alertTopic = 'robot/alert';
 
         let client = null;
         let keyHeld = {};
-        let timerInterval;
+        let isWaterPumpOn = false;
 
         function connectToBroker() {
             updateStatus('Bağlanılıyor...', 'orange');
             console.log(`MQTT Broker'a bağlanılıyor: ${brokerUrl}`);
-
             try {
                 client = mqtt.connect(brokerUrl, options);
-
                 client.on('connect', function () {
                     updateStatus('Bağlandı!', 'green');
                     console.log('MQTT Broker\'a başarıyla bağlandı.');
                     setupEventHandlers();
-                    client.subscribe(alertTopic, function (err) {
-                        if (!err) {
-                            console.log(`Başarıyla abone olundu: ${alertTopic}`);
-                        } else {
-                            console.error(`Abone olma hatası ${alertTopic}:`, err);
-                        }
-                    });
                 });
-
-                client.on('message', function (topic, payload) {
-                    const message = payload.toString();
-                    console.log(`Mesaj alındı [${topic}]: ${message}`);
-                    if (topic === alertTopic && message === "OBSTACLE_AHEAD") {
-                        Swal.fire({
-                          title: "Dikkat Engel!",
-                          html: "Robot bir engele yaklaştı ve durduruldu. <br>Kapanacak: <b></b> milisaniye.",
-                          timer: 3000,
-                          timerProgressBar: true,
-                          icon: 'warning',
-                          didOpen: () => {
-                            Swal.showLoading();
-                            const timer = Swal.getPopup().querySelector("b");
-                            timerInterval = setInterval(() => {
-                              timer.textContent = `${Swal.getTimerLeft()}`;
-                            }, 100);
-                          },
-                          willClose: () => {
-                            clearInterval(timerInterval);
-                          }
-                        }).then((result) => {
-                          if (result.dismiss === Swal.DismissReason.timer) {
-                            console.log("Engel uyarısı zamanlayıcı ile kapandı");
-                          }
-                        });
-                    }
-                });
-
                 client.on('error', function (err) {
                     updateStatus('Bağlantı Hatası!', 'red');
                     console.error('MQTT Bağlantı Hatası: ', err);
                     if (client && client.end) client.end(true);
                 });
-
                 client.on('close', function () {
                     updateStatus('Bağlantı Kesildi.', 'gray');
                     console.log('MQTT Bağlantısı kapandı.');
                 });
-
                 client.on('offline', function () {
                     updateStatus('Çevrimdışı.', 'gray');
                     console.log('MQTT İstemcisi çevrimdışı.');
                 });
-
             } catch (error) {
                  updateStatus('İstemci oluşturma hatası!', 'red');
                  console.error('MQTT İstemcisi oluşturulurken hata: ', error);
@@ -297,7 +436,7 @@
 
         function sendCommand(cmd) {
             if (client && client.connected) {
-                console.log(`Gönderiliyor [${robotTopic}]: ${cmd}`);
+                console.log(`Komut Gönderiliyor [${robotTopic}]: ${cmd}`);
                 client.publish(robotTopic, cmd, { qos: 0, retain: false }, (error) => {
                     if (error) {
                         console.error('Mesaj gönderme hatası:', error);
@@ -320,16 +459,46 @@
         function setupMovementButton(id, cmd) {
             var btn = document.getElementById(id);
             if (!btn) return;
-
             btn.addEventListener("mousedown", () => sendCommand(cmd));
             btn.addEventListener("mouseup", () => sendCommand("S"));
             btn.addEventListener("mouseleave", () => {
                  sendCommand("S");
             });
-
             btn.addEventListener("touchstart", (e) => { e.preventDefault(); sendCommand(cmd); }, { passive: false });
             btn.addEventListener("touchend", (e) => { e.preventDefault(); sendCommand("S"); }, { passive: false });
             btn.addEventListener("touchcancel", (e) => { e.preventDefault(); sendCommand("S"); }, { passive: false });
+        }
+
+        function setupServoSlider() {
+            const slider = document.getElementById('servoSlider');
+            const display = document.getElementById('servoValueDisplay');
+            const resetButton = document.getElementById('servoResetButton');
+            if (!slider || !display || !resetButton) {
+                console.error("Servo slider, display, or reset button element not found.");
+                return;
+            }
+
+            function updateDisplay(rawValue) {
+                const displayValue = parseInt(rawValue) - 90;
+                let prefix = "";
+                if (displayValue > 0) {
+                    prefix = "+";
+                }
+                display.textContent = prefix + displayValue + '°';
+            }
+            updateDisplay(slider.value);
+            slider.addEventListener('input', function() {
+                updateDisplay(this.value);
+            });
+            slider.addEventListener('change', function() {
+                const angle = this.value;
+                sendCommand('X' + angle);
+            });
+            resetButton.addEventListener('click', function() {
+                slider.value = 90;
+                updateDisplay(slider.value);
+                sendCommand('X90');
+            });
         }
 
         function setupStopButton(id) {
@@ -348,9 +517,31 @@
             });
         }
 
+        function setupsuPompasibuton() {
+            const suPompasibuton = document.getElementById('suPompasibuton');
+            if (!suPompasibuton) return;
+
+            suPompasibuton.addEventListener('click', function() {
+                isWaterPumpOn = !isWaterPumpOn;
+                const cmd = isWaterPumpOn ? 'W' : 'w';
+                sendCommand(cmd);
+                console.log("Su Fışkırtma: " + (isWaterPumpOn ? 'Aktif' : 'Kapalı'));
+
+                if (isWaterPumpOn) {
+                    this.textContent = 'Su Fışkırt: Kapalı';
+                    this.classList.remove('off');
+                    this.classList.add('on');
+                } else {
+                    this.textContent = 'Su Fışkırt: Açık';
+                    this.classList.remove('on');
+                    this.classList.add('off');
+                }
+            });
+        }
+
         function setupKlavye() {
             document.addEventListener("keydown", function (event) {
-                if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA' || event.target.type === 'range') {
                     return;
                 }
                 if (event.repeat) return;
@@ -358,58 +549,70 @@
                 let cmd = null;
                 let isMovementKey = false;
 
-                switch (event.key) {
-                    case "ArrowUp": case "w": case "W": cmd = "b"; isMovementKey = true; break;
-                    case "ArrowDown": case "s": case "S": cmd = "a"; isMovementKey = true; break;
-                    case "ArrowLeft": case "a": case "A": cmd = "c"; isMovementKey = true; break;
-                    case "ArrowRight": case "d": case "D": cmd = "d"; isMovementKey = true; break;
-                    case " ": cmd = "S"; console.log("DUR (Boşluk)"); break;
-                    case "t": case "T":
+                switch (event.key.toLowerCase()) {
+                    case "w": cmd = "b"; isMovementKey = true; break; 
+                    case "s": cmd = "a"; isMovementKey = true; break; 
+                    case "a": cmd = "c"; isMovementKey = true; break; 
+                    case "d": cmd = "d"; isMovementKey = true; break; 
+                    case " ": cmd = "S"; console.log("DUR (Boşluk tuşu)"); break;
+                    case "t":
                          var turboCheck = document.getElementById('turboCheckbox');
                          if(turboCheck) {
                              turboCheck.checked = !turboCheck.checked;
                              turboCheck.dispatchEvent(new Event('change'));
                          }
                          break;
+                    case "r":
+                        const resetButton = document.getElementById('servoResetButton');
+                        if (resetButton) {
+                            resetButton.click();
+                        }
+                        break;
+                    case "f":
+                        const suPompasibuton = document.getElementById('suPompasibuton');
+                        if(suPompasibuton){
+                            suPompasibuton.click();
+                        }
+                        break;
                 }
 
-                if (cmd && !keyHeld[event.key]) {
+                if (cmd && !keyHeld[event.key.toLowerCase()]) {
                     sendCommand(cmd);
                     if (isMovementKey || event.key === " ") {
-                         keyHeld[event.key] = true;
+                         keyHeld[event.key.toLowerCase()] = true;
                     }
                 }
             });
 
             document.addEventListener("keyup", function (event) {
-                 if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                 if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA' || event.target.type === 'range') {
                      return;
                  }
-
                 let isMovementKey = false;
-                switch (event.key) {
-                    case "ArrowUp": case "w": case "W": isMovementKey = true; break;
-                    case "ArrowDown": case "s": case "S": isMovementKey = true; break;
-                    case "ArrowLeft": case "a": case "A": isMovementKey = true; break;
-                    case "ArrowRight": case "d": case "D": isMovementKey = true; break;
+                switch (event.key.toLowerCase()) {
+                    case "w": isMovementKey = true; break;
+                    case "s": isMovementKey = true; break;
+                    case "a": isMovementKey = true; break;
+                    case "d": isMovementKey = true; break;
                     case " ": isMovementKey = true; break;
                 }
-
-                if (isMovementKey && keyHeld[event.key]) {
+                if (isMovementKey && keyHeld[event.key.toLowerCase()]) {
                     sendCommand("S");
                 }
-                 keyHeld[event.key] = false;
+                 keyHeld[event.key.toLowerCase()] = false;
             });
         }
 
         function setupEventHandlers() {
             console.log("Olay dinleyicileri ayarlanıyor...");
-            setupMovementButton("ileri", "b");
-            setupMovementButton("geri", "a");
-            setupMovementButton("sol", "c");
-            setupMovementButton("sag", "d");
+            setupMovementButton("ileri", "b"); 
+            setupMovementButton("geri", "a");  
+            setupMovementButton("sol", "c");   
+            setupMovementButton("sag", "d");   
             setupStopButton("dur");
+            setupServoSlider();
             setupTurboCheckbox();
+            setupsuPompasibuton();
             setupKlavye();
             console.log("Olay dinleyicileri ayarlandı.");
         }
