@@ -13,6 +13,7 @@
             color: #333;
             margin: 0;
             padding: 10px;
+            transition: background-color 0.2s ease-out;
         }
 
         h2 {
@@ -270,6 +271,21 @@
             transform: scale(0.96);
             box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
         }
+        #fireAlarm {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: red;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+            z-index: 10000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
 
         @media (max-width: 768px) {
             .container {
@@ -348,7 +364,8 @@
 </head>
 
 <body>
-     <div class="container">
+    <div id="fireAlarm">DİKKAT: YANGIN ALGILANDI!</div>
+    <div class="container">
         <h2>Wifi Robot Kontrol (MQTT)</h2>
 
         <div id="status" style="color: orange;">Durum: Bağlanılıyor...</div>
@@ -400,10 +417,15 @@
             connectTimeout: 5000
         };
         const robotTopic = 'robot/control';
+        const alarmTopic = 'robot/alarm';
 
         let client = null;
         let keyHeld = {};
         let isWaterPumpOn = false;
+        let fireAlarmElement = null;
+        let fireFlashInterval = null;
+        let isBodyFlashingRed = false;
+        const originalBodyBgColor = '#808080';
 
         function connectToBroker() {
             updateStatus('Bağlanılıyor...', 'orange');
@@ -413,20 +435,38 @@
                 client.on('connect', function () {
                     updateStatus('Bağlandı!', 'green');
                     console.log('MQTT Broker\'a başarıyla bağlandı.');
+                    
+                    client.subscribe(alarmTopic, function (err) {
+                        if (err) {
+                            console.error(`Abone olma hatası ${alarmTopic}:`, err);
+                        } else {
+                            console.log(`'${alarmTopic}' konusuna abone olundu.`);
+                        }
+                    });
                     setupEventHandlers();
                 });
                 client.on('error', function (err) {
                     updateStatus('Bağlantı Hatası!', 'red');
                     console.error('MQTT Bağlantı Hatası: ', err);
                     if (client && client.end) client.end(true);
+                    stopFireAlarmVisuals();
                 });
                 client.on('close', function () {
                     updateStatus('Bağlantı Kesildi.', 'gray');
                     console.log('MQTT Bağlantısı kapandı.');
+                    stopFireAlarmVisuals();
                 });
                 client.on('offline', function () {
                     updateStatus('Çevrimdışı.', 'gray');
                     console.log('MQTT İstemcisi çevrimdışı.');
+                    stopFireAlarmVisuals();
+                });
+                client.on('message', function (topic, message) {
+                    const msgString = message.toString();
+                    console.log(`Mesaj Alındı [${topic}]: ${msgString}`);
+                    if (topic === alarmTopic) {
+                        handleFireAlarm(msgString);
+                    }
                 });
             } catch (error) {
                  updateStatus('İstemci oluşturma hatası!', 'red');
@@ -454,6 +494,36 @@
                 statusElement.textContent = 'Durum: ' + message;
                 statusElement.style.color = color;
             }
+        }
+        
+        function handleFireAlarm(status) {
+            if (!fireAlarmElement) fireAlarmElement = document.getElementById('fireAlarm');
+            if (!fireAlarmElement) return;
+
+            if (status === "FIRE") {
+                fireAlarmElement.style.display = 'block';
+                if (!fireFlashInterval) {
+                    isBodyFlashingRed = false; 
+                    fireFlashInterval = setInterval(() => {
+                        isBodyFlashingRed = !isBodyFlashingRed;
+                        document.body.style.backgroundColor = isBodyFlashingRed ? 'red' : originalBodyBgColor;
+                    }, 500);
+                }
+            } else if (status === "NO_FIRE") {
+                stopFireAlarmVisuals();
+            }
+        }
+
+        function stopFireAlarmVisuals() {
+            if (!fireAlarmElement) fireAlarmElement = document.getElementById('fireAlarm');
+            if (fireAlarmElement) fireAlarmElement.style.display = 'none';
+            
+            if (fireFlashInterval) {
+                clearInterval(fireFlashInterval);
+                fireFlashInterval = null;
+            }
+            document.body.style.backgroundColor = originalBodyBgColor;
+            isBodyFlashingRed = false;
         }
 
         function setupMovementButton(id, cmd) {
@@ -521,18 +591,23 @@
             const suPompasibuton = document.getElementById('suPompasibuton');
             if (!suPompasibuton) return;
 
+            isWaterPumpOn = false; 
+            suPompasibuton.textContent = 'Su Fışkırt: Kapalı';
+            suPompasibuton.classList.remove('on');
+            suPompasibuton.classList.add('off');
+
             suPompasibuton.addEventListener('click', function() {
-                isWaterPumpOn = !isWaterPumpOn;
-                const cmd = isWaterPumpOn ? 'W' : 'w';
+                isWaterPumpOn = !isWaterPumpOn; 
+                const cmd = isWaterPumpOn ? 'w' : 'W'; 
                 sendCommand(cmd);
                 console.log("Su Fışkırtma: " + (isWaterPumpOn ? 'Aktif' : 'Kapalı'));
 
-                if (isWaterPumpOn) {
-                    this.textContent = 'Su Fışkırt: Kapalı';
+                if (isWaterPumpOn) { 
+                    this.textContent = 'Su Fışkırt: Açık';
                     this.classList.remove('off');
                     this.classList.add('on');
-                } else {
-                    this.textContent = 'Su Fışkırt: Açık';
+                } else { 
+                    this.textContent = 'Su Fışkırt: Kapalı';
                     this.classList.remove('on');
                     this.classList.add('off');
                 }
@@ -550,10 +625,10 @@
                 let isMovementKey = false;
 
                 switch (event.key.toLowerCase()) {
-                    case "w": cmd = "b"; isMovementKey = true; break; 
-                    case "s": cmd = "a"; isMovementKey = true; break; 
-                    case "a": cmd = "c"; isMovementKey = true; break; 
-                    case "d": cmd = "d"; isMovementKey = true; break; 
+                    case "w": cmd = "d"; isMovementKey = true; break; 
+                    case "s": cmd = "c"; isMovementKey = true; break; 
+                    case "a": cmd = "a"; isMovementKey = true; break; 
+                    case "d": cmd = "b"; isMovementKey = true; break; 
                     case " ": cmd = "S"; console.log("DUR (Boşluk tuşu)"); break;
                     case "t":
                          var turboCheck = document.getElementById('turboCheckbox');
@@ -605,10 +680,10 @@
 
         function setupEventHandlers() {
             console.log("Olay dinleyicileri ayarlanıyor...");
-            setupMovementButton("ileri", "b"); 
-            setupMovementButton("geri", "a");  
-            setupMovementButton("sol", "c");   
-            setupMovementButton("sag", "d");   
+            setupMovementButton("ileri", "d"); 
+            setupMovementButton("geri", "c");  
+            setupMovementButton("sol", "a");   
+            setupMovementButton("sag", "b");   
             setupStopButton("dur");
             setupServoSlider();
             setupTurboCheckbox();
@@ -619,6 +694,8 @@
 
         window.onload = function () {
             console.log("Sayfa yüklendi. MQTT bağlantısı başlatılıyor...");
+            fireAlarmElement = document.getElementById('fireAlarm');
+            stopFireAlarmVisuals(); 
             connectToBroker();
         };
     </script>
