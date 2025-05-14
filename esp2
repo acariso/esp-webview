@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>Wifi Robot Kontrol (MQTT)</title>
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #808080;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            color: #333;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 450px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+            flex-grow: 1;
+        }
+
+        h2 {
+            color: #EEE;
+            text-shadow: 1px 1px 2px #333;
+        }
+
+        h3 {
+            color: #444;
+            margin-bottom: 10px;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            justify-items: center;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .button {
+            border: none;
+            color: white;
+            padding: 15px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 12px;
+            width: 100px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+            user-select: none;
+        }
+
+        .button:hover {
+            filter: brightness(1.1);
+        }
+
+
+        .button:active {
+            transform: scale(0.9);
+        }
+
+        .bcolor {
+            background-color: #28a745;
+        }
+
+        .bcolor:hover {
+            background-color: #218838;
+        }
+
+        .bcolor:active {
+            background-color: #1e7e34;
+        }
+
+        .control-section {
+            border: 1px solid #ccc;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 20px 0;
+            background-color: #f8f9fa;
+        }
+
+        .turbo-control {
+            text-align: center;
+            margin-top: 15px;
+            padding: 10px;
+        }
+
+        .turbo-control label {
+            font-weight: bold;
+            margin-right: 10px;
+            color: #333;
+        }
+
+        #turboCheckbox {
+            transform: scale(1.5);
+            vertical-align: middle;
+            cursor: pointer;
+            accent-color: #28a745;
+        }
+
+        #status {
+            margin-top: 10px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+         footer {
+            text-align: center;
+            
+            padding: 15px;
+            font-size: 0.9em;
+            color: rgb(255, 85, 116);
+        }
+
+        footer p {
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                width: 90%;
+                padding: 15px;
+            }
+
+            .button {
+                width: 80px;
+                height: 50px;
+                font-size: 16px;
+            }
+
+            .turbo-control {
+                padding: 8px;
+            }
+        }
+
+        @media (max-width: 480px) {
+             .button-grid {
+                 grid-template-areas:
+                    ". ileri ."
+                    "sol dur sag"
+                    ". geri .";
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+            #ileri { grid-area: ileri; }
+            #sol { grid-area: sol; }
+            #dur { grid-area: dur; }
+            #sag { grid-area: sag; }
+            #geri { grid-area: geri; }
+
+            .button {
+                width: 100%;
+                min-width: 70px;
+                height: 55px;
+            }
+        }
+    </style>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+</head>
+
+<body>
+     <div class="container">
+        <h2>Wifi Robot Kontrol (MQTT)</h2>
+
+        <div id="status" style="color: orange;">Durum: Bağlanılıyor...</div>
+
+        <div class="control-section">
+            <h3>Yön Tuşları</h3>
+            <div class="button-grid">
+                <div class="empty" style="grid-area: auto;"></div>
+                <button id="ileri" class="button bcolor">İleri</button>
+                <div class="empty" style="grid-area: auto;"></div>
+                <button id="sol" class="button bcolor">Sol</button>
+                <button id="dur" class="button bcolor" style="background-color: #dc3545;">DUR</button>
+                <button id="sag" class="button bcolor">Sağ</button>
+                <div class="empty" style="grid-area: auto;"></div>
+                <button id="geri" class="button bcolor">Geri</button>
+                <div class="empty" style="grid-area: auto;"></div>
+            </div>
+        </div>
+
+        <div class="control-section">
+            <h3>Ayarlar</h3>
+            <div class="turbo-control">
+                <label for="turboCheckbox">Turbo Modu:</label>
+                <input type="checkbox" id="turboCheckbox">
+            </div>
+        </div>
+        <footer>
+            <p> © Kametal</p>
+        </footer>
+    </div>
+    
+    <script>
+        const statusElement = document.getElementById('status');
+
+        const brokerUrl = 'wss://7c22c057a12649dd94ffdc07d8ba673c.s1.eu.hivemq.cloud:8884/mqtt';
+        const options = {
+            clientId: 'WebRobotControl_' + Date.now(),
+            username: 'ismail',
+            password: 'iSmail0606',
+            clean: true,
+            connectTimeout: 5000
+        };
+        const robotTopic = 'robot/control';
+        const alertTopic = 'robot/alert';
+
+        let client = null;
+        let keyHeld = {};
+        let timerInterval;
+
+        function connectToBroker() {
+            updateStatus('Bağlanılıyor...', 'orange');
+            console.log(`MQTT Broker'a bağlanılıyor: ${brokerUrl}`);
+
+            try {
+                client = mqtt.connect(brokerUrl, options);
+
+                client.on('connect', function () {
+                    updateStatus('Bağlandı!', 'green');
+                    console.log('MQTT Broker\'a başarıyla bağlandı.');
+                    setupEventHandlers();
+                    client.subscribe(alertTopic, function (err) {
+                        if (!err) {
+                            console.log(`Başarıyla abone olundu: ${alertTopic}`);
+                        } else {
+                            console.error(`Abone olma hatası ${alertTopic}:`, err);
+                        }
+                    });
+                });
+
+                client.on('message', function (topic, payload) {
+                    const message = payload.toString();
+                    console.log(`Mesaj alındı [${topic}]: ${message}`);
+                    if (topic === alertTopic && message === "OBSTACLE_AHEAD") {
+                        Swal.fire({
+                          title: "Dikkat Engel!",
+                          html: "Robot bir engele yaklaştı ve durduruldu. <br>Kapanacak: <b></b> milisaniye.",
+                          timer: 3000,
+                          timerProgressBar: true,
+                          icon: 'warning',
+                          didOpen: () => {
+                            Swal.showLoading();
+                            const timer = Swal.getPopup().querySelector("b");
+                            timerInterval = setInterval(() => {
+                              timer.textContent = `${Swal.getTimerLeft()}`;
+                            }, 100);
+                          },
+                          willClose: () => {
+                            clearInterval(timerInterval);
+                          }
+                        }).then((result) => {
+                          if (result.dismiss === Swal.DismissReason.timer) {
+                            console.log("Engel uyarısı zamanlayıcı ile kapandı");
+                          }
+                        });
+                    }
+                });
+
+                client.on('error', function (err) {
+                    updateStatus('Bağlantı Hatası!', 'red');
+                    console.error('MQTT Bağlantı Hatası: ', err);
+                    if (client && client.end) client.end(true);
+                });
+
+                client.on('close', function () {
+                    updateStatus('Bağlantı Kesildi.', 'gray');
+                    console.log('MQTT Bağlantısı kapandı.');
+                });
+
+                client.on('offline', function () {
+                    updateStatus('Çevrimdışı.', 'gray');
+                    console.log('MQTT İstemcisi çevrimdışı.');
+                });
+
+            } catch (error) {
+                 updateStatus('İstemci oluşturma hatası!', 'red');
+                 console.error('MQTT İstemcisi oluşturulurken hata: ', error);
+            }
+        }
+
+        function sendCommand(cmd) {
+            if (client && client.connected) {
+                console.log(`Gönderiliyor [${robotTopic}]: ${cmd}`);
+                client.publish(robotTopic, cmd, { qos: 0, retain: false }, (error) => {
+                    if (error) {
+                        console.error('Mesaj gönderme hatası:', error);
+                        updateStatus('Gönderme Hatası!', 'red');
+                    }
+                });
+            } else {
+                console.warn('Komut gönderilemedi - MQTT bağlı değil.');
+                updateStatus('Bağlı Değil!', 'red');
+            }
+        }
+
+        function updateStatus(message, color) {
+            if (statusElement) {
+                statusElement.textContent = 'Durum: ' + message;
+                statusElement.style.color = color;
+            }
+        }
+
+        function setupMovementButton(id, cmd) {
+            var btn = document.getElementById(id);
+            if (!btn) return;
+
+            btn.addEventListener("mousedown", () => sendCommand(cmd));
+            btn.addEventListener("mouseup", () => sendCommand("S"));
+            btn.addEventListener("mouseleave", () => {
+                 sendCommand("S");
+            });
+
+            btn.addEventListener("touchstart", (e) => { e.preventDefault(); sendCommand(cmd); }, { passive: false });
+            btn.addEventListener("touchend", (e) => { e.preventDefault(); sendCommand("S"); }, { passive: false });
+            btn.addEventListener("touchcancel", (e) => { e.preventDefault(); sendCommand("S"); }, { passive: false });
+        }
+
+        function setupStopButton(id) {
+            var btn = document.getElementById(id);
+             if (!btn) return;
+             btn.addEventListener("click", () => sendCommand("S"));
+        }
+
+        function setupTurboCheckbox() {
+            var turboCheck = document.getElementById('turboCheckbox');
+            if (!turboCheck) return;
+            turboCheck.addEventListener('change', function () {
+                const cmd = this.checked ? 'T' : 'N';
+                sendCommand(cmd);
+                console.log("Turbo modu: " + (this.checked ? 'Aktif' : 'Kapalı'));
+            });
+        }
+
+        function setupKlavye() {
+            document.addEventListener("keydown", function (event) {
+                if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                    return;
+                }
+                if (event.repeat) return;
+
+                let cmd = null;
+                let isMovementKey = false;
+
+                switch (event.key) {
+                    case "ArrowUp": case "w": case "W": cmd = "b"; isMovementKey = true; break;
+                    case "ArrowDown": case "s": case "S": cmd = "a"; isMovementKey = true; break;
+                    case "ArrowLeft": case "a": case "A": cmd = "c"; isMovementKey = true; break;
+                    case "ArrowRight": case "d": case "D": cmd = "d"; isMovementKey = true; break;
+                    case " ": cmd = "S"; console.log("DUR (Boşluk)"); break;
+                    case "t": case "T":
+                         var turboCheck = document.getElementById('turboCheckbox');
+                         if(turboCheck) {
+                             turboCheck.checked = !turboCheck.checked;
+                             turboCheck.dispatchEvent(new Event('change'));
+                         }
+                         break;
+                }
+
+                if (cmd && !keyHeld[event.key]) {
+                    sendCommand(cmd);
+                    if (isMovementKey || event.key === " ") {
+                         keyHeld[event.key] = true;
+                    }
+                }
+            });
+
+            document.addEventListener("keyup", function (event) {
+                 if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                     return;
+                 }
+
+                let isMovementKey = false;
+                switch (event.key) {
+                    case "ArrowUp": case "w": case "W": isMovementKey = true; break;
+                    case "ArrowDown": case "s": case "S": isMovementKey = true; break;
+                    case "ArrowLeft": case "a": case "A": isMovementKey = true; break;
+                    case "ArrowRight": case "d": case "D": isMovementKey = true; break;
+                    case " ": isMovementKey = true; break;
+                }
+
+                if (isMovementKey && keyHeld[event.key]) {
+                    sendCommand("S");
+                }
+                 keyHeld[event.key] = false;
+            });
+        }
+
+        function setupEventHandlers() {
+            console.log("Olay dinleyicileri ayarlanıyor...");
+            setupMovementButton("ileri", "b");
+            setupMovementButton("geri", "a");
+            setupMovementButton("sol", "c");
+            setupMovementButton("sag", "d");
+            setupStopButton("dur");
+            setupTurboCheckbox();
+            setupKlavye();
+            console.log("Olay dinleyicileri ayarlandı.");
+        }
+
+        window.onload = function () {
+            console.log("Sayfa yüklendi. MQTT bağlantısı başlatılıyor...");
+            connectToBroker();
+        };
+    </script>
+</body>
+</html>
