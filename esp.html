@@ -388,7 +388,7 @@
         <div class="control-section">
             <h3>Servo Kontrol</h3>
             <div class="servo-slider-modern-wrapper">
-                <input type="range" id="servoSlider" min="0" max="180" value="90" step="1">
+                <input type="range" id="servoSlider" min="0" max="180" value="90" step="30">
             </div>
             <span id="servoValueDisplay" class="servo-value-display">0°</span>
             <button id="servoResetButton" class="servo-reset-button">Sıfırla</button>
@@ -680,10 +680,10 @@
 
         function setupEventHandlers() {
             console.log("Olay dinleyicileri ayarlanıyor...");
-            setupMovementButton("ileri", "d"); 
-            setupMovementButton("geri", "c");  
-            setupMovementButton("sol", "a");   
-            setupMovementButton("sag", "b");   
+            setupMovementButton("ileri", "b"); 
+            setupMovementButton("geri", "a");  
+            setupMovementButton("sol", "c");   
+            setupMovementButton("sag", "d");   
             setupStopButton("dur");
             setupServoSlider();
             setupTurboCheckbox();
