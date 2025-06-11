@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>Wifi Robot Kontrol (MQTT)</title>
+    <style>
+        body { background-color: #808080; font-family: Arial, sans-serif; text-align: center; color: #333; margin: 0; padding: 10px; transition: background-color 0.2s ease-out; }
+        h2 { color: #EEE; text-shadow: 1px 1px 2px #333; }
+        h3 { color: #444; margin-bottom: 10px; }
+        .container { max-width: 450px; margin: 20px auto; background-color: #ffffff; padding: 20px; border-radius: 20px; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3); }
+        .button-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; justify-items: center; align-items: center; margin-bottom: 10px; }
+        .button { border: none; color: white; padding: 15px; font-size: 18px; cursor: pointer; border-radius: 12px; width: 100px; height: 60px; display: flex; align-items: center; justify-content: center; transition: background-color 0.3s ease, transform 0.2s ease, opacity 0.3s ease; box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3); user-select: none; }
+        .button:active { transform: scale(0.9); }
+        .button:disabled { background-color: #a0a0a0 !important; cursor: not-allowed; opacity: 0.6; }
+        .bcolor { background-color: #28a745; }
+        .bcolor:hover:not(:disabled) { background-color: #218838; }
+        .bcolor:active:not(:disabled) { background-color: #1e7e34; }
+        .control-section { border: 1px solid #ccc; border-radius: 12px; padding: 15px; margin: 20px 0; background-color: #f8f9fa; }
+        .settings-grid { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .control-item { display: flex; align-items: center; justify-content: center; width: 100%; }
+        .control-item label { font-weight: bold; margin-right: 10px; color: #333; }
+        .control-item input[type="checkbox"] { transform: scale(1.5); vertical-align: middle; cursor: pointer; }
+        #turboCheckbox { accent-color: #28a745; }
+        .toggle-button { border: none; color: white; padding: 10px 15px; font-size: 16px; cursor: pointer; border-radius: 12px; min-width: 180px; height: 50px; display: flex; align-items: center; justify-content: center; transition: background-color 0.3s ease, transform 0.2s ease; box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3); user-select: none; }
+        .toggle-button:active { transform: scale(0.95); }
+        .toggle-button.off { background-color: #007BFF; }
+        .toggle-button.off:hover { background-color: #0056b3; }
+        .toggle-button.on { background-color: #28a745; }
+        .toggle-button.on:hover { background-color: #218838; }
+        #status { margin-top: 10px; margin-bottom: 15px; font-weight: bold; font-size: 1.1em; }
+        .servo-slider-modern-wrapper { position: relative; width: 90%; height: 20px; margin: 25px auto; display: flex; align-items: center; }
+        input[type=range]#servoSlider { -webkit-appearance: none; appearance: none; --slider-fill-color: #28a745; --slider-track-bg: #F0F0F7; --slider-segment-line: #D1D1D6; --slider-border-color: #C7C7CC; width: 100%; height: 100%; margin: 0; padding: 0; background-color: transparent; background-image: repeating-linear-gradient( to right, var(--slider-track-bg), var(--slider-track-bg) calc(16.666% - 1px), var(--slider-segment-line) calc(16.666% - 1px), var(--slider-segment-line) 16.666% ); border-radius: 10px; overflow: hidden; cursor: pointer; border: 1px solid var(--slider-border-color); box-shadow: inset 0 0.5px 1px rgba(0,0,0,0.05); }
+        input[type=range]#servoSlider::-webkit-slider-runnable-track { -webkit-appearance: none; height: 100%; background: transparent; border-radius: 10px; }
+        input[type=range]#servoSlider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 1px; height: 100%; background: transparent; border: none; box-shadow: -450px 0 0 450px var(--slider-fill-color); cursor: pointer; }
+        input[type=range]#servoSlider::-moz-range-track { width: 100%; height: 100%; background: transparent; border-radius: 10px; border: none; }
+        input[type=range]#servoSlider::-moz-range-thumb { -moz-appearance: none; appearance: none; width: 18px; height: 18px; background: #FFFFFF; border: 1.5px solid var(--slider-fill-color); border-radius: 50%; cursor: pointer; position: relative; z-index: 10; box-shadow: 0 1px 2px rgba(0,0,0,0.15); margin-top: calc((20px - 18px) / 2 - 1.5px); }
+        input[type=range]#servoSlider::-moz-range-progress { background-color: var(--slider-fill-color); height: 100%; border-radius: 10px 0 0 10px; }
+        input[type=range]#servoSlider[value="180"]::-moz-range-progress, input[type=range]#servoSlider[value="0"]::-moz-range-progress { border-radius: 10px; }
+        .servo-value-display { margin-top: 12px; font-size: 1.15em; font-weight: 600; color: #343A40; }
+        .servo-reset-button { background-color: #dc3545; color: white; font-weight: 500; border: none; padding: 10px 20px; font-size: 15px; cursor: pointer; border-radius: 8px; margin-top: 18px; transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease; box-shadow: 0 3px 6px rgba(220, 53, 69, 0.3); }
+        .servo-reset-button:hover { background-color: #c82333; box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4); }
+        .servo-reset-button:active { background-color: #bd2130; transform: scale(0.96); box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2); }
+        #fireAlarm { display: none; position: fixed; top: 0; left: 0; width: 100%; background-color: red; color: white; text-align: center; padding: 10px; font-size: 1.2em; font-weight: bold; z-index: 10000; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+    </style>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+</head>
+
+<body>
+    <div id="fireAlarm">DİKKAT: YANGIN ALGILANDI!</div>
+    <div class="container">
+        <h2>Wifi Robot Kontrol (MQTT)</h2>
+        <div id="status" style="color: orange;">Durum: Bağlanılıyor...</div>
+
+        <div class="control-section">
+            <h3>Yön Tuşları</h3>
+            <div class="button-grid">
+                <div class="empty"></div>
+                <button id="ileri" class="button bcolor">İleri</button>
+                <div class="empty"></div>
+                <button id="sol" class="button bcolor">Sol</button>
+                <button id="dur" class="button bcolor" style="background-color: #dc3545;">DUR</button>
+                <button id="sag" class="button bcolor">Sağ</button>
+                <div class="empty"></div>
+                <button id="geri" class="button bcolor">Geri</button>
+                <div class="empty"></div>
+            </div>
+        </div>
+
+        <div class="control-section">
+            <h3>Servo Kontrol</h3>
+            <div class="servo-slider-modern-wrapper">
+                <input type="range" id="servoSlider" min="0" max="180" value="90" step="30">
+            </div>
+            <span id="servoValueDisplay" class="servo-value-display">0°</span>
+            <button id="servoResetButton" class="servo-reset-button">Sıfırla</button>
+        </div>
+
+        <div class="control-section">
+            <h3>Ayarlar & Ek Kontroller</h3>
+            <div class="settings-grid">
+                 <div class="control-item">
+                    <button id="autoModeButton" class="toggle-button off">Otomatik Mod: Kapalı</button>
+                </div>
+                <div class="control-item">
+                    <label for="turboCheckbox">Turbo Modu:</label>
+                    <input type="checkbox" id="turboCheckbox">
+                </div>
+                <div class="control-item">
+                    <button id="suPompasibuton" class="toggle-button off">Su Pompası</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const statusElement = document.getElementById('status');
+        const brokerUrl = 'wss://36288b3a8cbb4d6f85c7ab5b43dc30db.s1.eu.hivemq.cloud:8884/mqtt';
+        const options = { clientId: 'WebRobotControl_' + Date.now(), username: 'hberks', password: 'Berk0808', clean: true, connectTimeout: 5000 };
+        const robotControlTopic = 'robot/control';
+        const robotModeTopic = 'robot/mode';
+        const alarmTopicWildcard = 'robot/alarm/#';
+
+        let client = null;
+        let keyHeld = {};
+        let isWaterPumpOn = false;
+        let isAutoMode = false;
+        let fireAlarmElement = null;
+        let fireFlashInterval = null;
+        let isBodyFlashingRed = false;
+        const originalBodyBgColor = '#808080';
+        let fireStates = { center: false, left: false, right: false };
+
+        function connectToBroker() {
+            updateStatus('Bağlanılıyor...', 'orange');
+            try {
+                client = mqtt.connect(brokerUrl, options);
+                client.on('connect', function () {
+                    updateStatus('Bağlandı!', 'green');
+                    client.subscribe(alarmTopicWildcard, function (err) {
+                        if (err) { console.error(`Abone olma hatası ${alarmTopicWildcard}:`, err); } 
+                        else { console.log(`'${alarmTopicWildcard}' konusuna abone olundu.`); }
+                    });
+                    setupEventHandlers();
+                });
+                client.on('error', function (err) { updateStatus('Bağlantı Hatası!', 'red'); console.error('MQTT Bağlantı Hatası: ', err); if (client && client.end) client.end(true); stopFireAlarmVisuals(); });
+                client.on('close', function () { updateStatus('Bağlantı Kesildi.', 'gray'); stopFireAlarmVisuals(); });
+                client.on('offline', function () { updateStatus('Çevrimdışı.', 'gray'); stopFireAlarmVisuals(); });
+                client.on('message', function (topic, message) {
+                    const msgString = message.toString();
+                    console.log(`Mesaj Alındı [${topic}]: ${msgString}`);
+                    if (topic.startsWith('robot/alarm/')) {
+                        const sensorLocation = topic.split('/')[2];
+                        handleFireAlarm(sensorLocation, msgString);
+                    }
+                });
+            } catch (error) { updateStatus('İstemci oluşturma hatası!', 'red'); console.error('MQTT İstemcisi oluşturulurken hata: ', error); }
+        }
+
+        function sendCommand(topic, cmd) {
+            if (client && client.connected) {
+                console.log(`Komut Gönderiliyor [${topic}]: ${cmd}`);
+                client.publish(topic, cmd, { qos: 0, retain: false }, (error) => {
+                    if (error) { console.error('Mesaj gönderme hatası:', error); updateStatus('Gönderme Hatası!', 'red'); }
+                });
+            } else { console.warn('Komut gönderilemedi - MQTT bağlı değil.'); updateStatus('Bağlı Değil!', 'red'); }
+        }
+
+        function updateStatus(message, color) { if (statusElement) { statusElement.textContent = 'Durum: ' + message; statusElement.style.color = color; } }
+        
+        function handleFireAlarm(location, status) {
+            if (!fireAlarmElement) fireAlarmElement = document.getElementById('fireAlarm');
+            if (!fireAlarmElement) return;
+
+            fireStates[location] = (status === "FIRE");
+            const anyFire = Object.values(fireStates).some(state => state === true);
+
+            if (anyFire) {
+                fireAlarmElement.style.display = 'block';
+                if (!fireFlashInterval) {
+                    isBodyFlashingRed = false; 
+                    fireFlashInterval = setInterval(() => {
+                        isBodyFlashingRed = !isBodyFlashingRed;
+                        document.body.style.backgroundColor = isBodyFlashingRed ? 'red' : originalBodyBgColor;
+                    }, 500);
+                }
+            } else {
+                stopFireAlarmVisuals();
+            }
+        }
+
+        function stopFireAlarmVisuals() {
+            if (!fireAlarmElement) fireAlarmElement = document.getElementById('fireAlarm');
+            if (fireAlarmElement) fireAlarmElement.style.display = 'none';
+            if (fireFlashInterval) { clearInterval(fireFlashInterval); fireFlashInterval = null; }
+            document.body.style.backgroundColor = originalBodyBgColor;
+            isBodyFlashingRed = false;
+        }
+
+        function setupMovementButton(id, cmd) {
+            var btn = document.getElementById(id);
+            if (!btn) return;
+            btn.addEventListener("mousedown", () => sendCommand(robotControlTopic, cmd));
+            btn.addEventListener("mouseup", () => sendCommand(robotControlTopic, "S"));
+            btn.addEventListener("mouseleave", () => sendCommand(robotControlTopic, "S"));
+            btn.addEventListener("touchstart", (e) => { e.preventDefault(); sendCommand(robotControlTopic, cmd); }, { passive: false });
+            btn.addEventListener("touchend", (e) => { e.preventDefault(); sendCommand(robotControlTopic, "S"); }, { passive: false });
+            btn.addEventListener("touchcancel", (e) => { e.preventDefault(); sendCommand(robotControlTopic, "S"); }, { passive: false });
+        }
+
+        function setupServoSlider() {
+            const slider = document.getElementById('servoSlider');
+            const display = document.getElementById('servoValueDisplay');
+            const resetButton = document.getElementById('servoResetButton');
+            if (!slider || !display || !resetButton) return;
+            function updateDisplay(rawValue) {
+                const displayValue = parseInt(rawValue) - 90;
+                display.textContent = (displayValue > 0 ? "+" : "") + displayValue + '°';
+            }
+            updateDisplay(slider.value);
+            slider.addEventListener('input', function() { updateDisplay(this.value); });
+            slider.addEventListener('change', function() { sendCommand(robotControlTopic, 'X' + this.value); });
+            resetButton.addEventListener('click', function() { slider.value = 90; updateDisplay(slider.value); sendCommand(robotControlTopic, 'X90'); });
+        }
+
+        function setupStopButton(id) { document.getElementById(id)?.addEventListener("click", () => sendCommand(robotControlTopic, "S")); }
+        
+        function setupTurboCheckbox() {
+            document.getElementById('turboCheckbox')?.addEventListener('change', function () {
+                sendCommand(robotControlTopic, this.checked ? 'T' : 'N');
+            });
+        }
+        
+        function setupAutoModeButton() {
+            const autoModeButton = document.getElementById('autoModeButton');
+            const movementButtons = ['ileri', 'geri', 'sol', 'sag', 'dur'];
+            if (!autoModeButton) return;
+            
+            autoModeButton.addEventListener('click', function() {
+                isAutoMode = !isAutoMode;
+                const cmd = isAutoMode ? 'AUTO' : 'MANUAL';
+                sendCommand(robotModeTopic, cmd);
+
+                this.textContent = `Otomatik Mod: ${isAutoMode ? 'Açık' : 'Kapalı'}`;
+                this.classList.toggle('on', isAutoMode);
+                this.classList.toggle('off', !isAutoMode);
+                
+                movementButtons.forEach(id => {
+                    const btn = document.getElementById(id);
+                    if (btn) btn.disabled = isAutoMode;
+                });
+            });
+        }
+
+        function setupsuPompasibuton() {
+            const suPompasibuton = document.getElementById('suPompasibuton');
+            if (!suPompasibuton) return;
+            isWaterPumpOn = false; 
+            suPompasibuton.textContent = 'Su Pompası: Kapalı';
+            suPompasibuton.classList.add('off');
+            suPompasibuton.classList.remove('on');
+
+            suPompasibuton.addEventListener('click', function() {
+                isWaterPumpOn = !isWaterPumpOn; 
+                const cmd = isWaterPumpOn ? 'W' : 'w'; 
+                sendCommand(robotControlTopic, cmd);
+                this.textContent = `Su Pompası: ${isWaterPumpOn ? 'Açık' : 'Kapalı'}`;
+                this.classList.toggle('on', isWaterPumpOn);
+                this.classList.toggle('off', !isWaterPumpOn);
+            });
+        }
+
+        function setupKlavye() {
+            document.addEventListener("keydown", function (event) {
+                if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA' || event.target.type === 'range' || isAutoMode) return;
+                if (event.repeat) return;
+                let cmd = null;
+                let isMovementKey = false;
+                switch (event.key.toLowerCase()) {
+                    case "w": cmd = "d"; isMovementKey = true; break; 
+                    case "s": cmd = "c"; isMovementKey = true; break; 
+                    case "a": cmd = "a"; isMovementKey = true; break; 
+                    case "d": cmd = "b"; isMovementKey = true; break; 
+                    case " ": cmd = "S"; break;
+                    case "t": document.getElementById('turboCheckbox')?.click(); break;
+                    case "r": document.getElementById('servoResetButton')?.click(); break;
+                    case "f": document.getElementById('suPompasibuton')?.click(); break;
+                }
+                if (cmd && !keyHeld[event.key.toLowerCase()]) {
+                    sendCommand(robotControlTopic, cmd);
+                    if (isMovementKey || event.key === " ") { keyHeld[event.key.toLowerCase()] = true; }
+                }
+            });
+            document.addEventListener("keyup", function (event) {
+                if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA' || event.target.type === 'range' || isAutoMode) return;
+                let isMovementKey = ["w", "s", "a", "d", " "].includes(event.key.toLowerCase());
+                if (isMovementKey && keyHeld[event.key.toLowerCase()]) { sendCommand(robotControlTopic, "S"); }
+                keyHeld[event.key.toLowerCase()] = false;
+            });
+        }
+
+        function setupEventHandlers() {
+            setupMovementButton("ileri", "b"); setupMovementButton("geri", "a"); setupMovementButton("sol", "c"); setupMovementButton("sag", "d"); 
+            setupStopButton("dur");
+            setupServoSlider();
+            setupTurboCheckbox();
+            setupAutoModeButton();
+            setupsuPompasibuton();
+            setupKlavye();
+        }
+
+        window.onload = function () {
+            fireAlarmElement = document.getElementById('fireAlarm');
+            stopFireAlarmVisuals(); 
+            connectToBroker();
+        };
+    </script>
+</body>
+</html>
