@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Gemini ile Sohbet</title>
+  <style>
+      body {
+          font-family: Arial, sans-serif;
+          margin: 20px;
+          padding: 20px;
+          background-color: #f4f4f4;
+      }
+      h1 {
+          color: #333;
+      }
+      .response {
+          background-color: #fff;
+          border: 1px solid #ddd;
+          padding: 10px;
+          margin-top: 20px;
+          border-radius: 5px;
+          min-height: 50px; /* Yanıt alanı için minimum yükseklik */
+      }
+      .content {
+          white-space: pre-wrap;
+          font-family: 'Courier New', Courier, monospace;
+          color: #555;
+      }
+      .message {
+          margin-bottom: 10px;
+      }
+      .message-role {
+          font-weight: bold;
+      }
+      .message-content {
+          padding-left: 10px;
+          display: block; /* pre'nin tam genişlik kullanması için */
+      }
+      textarea {
+          width: 100%;
+          box-sizing: border-box; /* padding ve border'ı genişliğe dahil et */
+          height: 100px;
+          margin-top: 10px;
+      }
+      button {
+          margin-top: 10px;
+          padding: 10px 15px;
+          background-color: #007bff;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+      }
+      button:hover {
+          background-color: #0056b3;
+      }
+      .error {
+          color: red;
+          font-weight: bold;
+      }
+  </style>
+</head>
+<body>
+  <h1>Google Gemini ile Sohbet</h1>
+  <p style="color: red; border: 1px solid red; padding: 10px;">
+      <strong>Güvenlik Uyarısı:</strong> API Anahtarınızı doğrudan tarayıcı koduna eklemek güvenli değildir. Bu kod yalnızca geliştirme ve öğrenme amaçlıdır. Gerçek bir uygulamada API istekleri bir sunucu üzerinden yapılmalıdır.
+  </p>
+  <textarea id="userInput" placeholder="Buraya mesajınızı yazın..."></textarea>
+  <button onclick="sendMessage()">Gönder</button>
+
+  <div class="response">
+      <h2>Sohbet Geçmişi:</h2>
+      <div class="content" id="responseContent">Henüz mesaj yok...</div>
+  </div>
+
+  <script>
+      // !!! GÜVENLİK UYARISI: API anahtarınızı istemci tarafı kodda ifşa etmeyin.
+      // Bu sadece bir test örneğidir.
+      const GEMINI_API_KEY = 'AIzaSyCZUBLimLVpwfv7b4kJ3hrx0zhYq2ANb94';
+      const GEMINI_MODEL = 'gemini-1.5-flash-latest';
+      const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+
+      // Mesaj geçmişini saklamak için bir dizi
+      let messageHistory = [];
+
+      async function sendMessage() {
+          const userInput = document.getElementById('userInput');
+          const input = userInput.value.trim();
+          if (!input) return; // Boş mesaj göndermeyi engelle
+
+          const responseContent = document.getElementById('responseContent');
+          responseContent.innerHTML += `<div class="message"><strong class="message-role">Kullanıcı:</strong><pre class="message-content">${input}</pre></div>`;
+
+          // Kullanıcı mesajını geçmişe ekle
+          messageHistory.push({ role: 'user', content: input });
+
+          // Gemini API'si için mesajları doğru formata çevir
+          const geminiFormattedHistory = messageHistory.map(msg => ({
+              // Gemini API 'assistant' yerine 'model' rolünü kullanır
+              role: msg.role === 'assistant' ? 'model' : 'user',
+              parts: [{ text: msg.content }]
+          }));
+
+          // Kullanıcı girdisini temizle ve butonu devre dışı bırak
+          userInput.value = '';
+          document.querySelector('button').disabled = true;
+
+          try {
+              const response = await fetch(API_URL, {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                      contents: geminiFormattedHistory
+                  })
+              });
+
+              if (!response.ok) {
+                  const errorData = await response.json();
+                  throw new Error(`API Hatası: ${errorData.error.message}`);
+              }
+
+              const data = await response.json();
+              
+              if (!data.candidates || data.candidates.length === 0) {
+                   throw new Error("API'den geçerli bir yanıt alınamadı. İçerik filtresi nedeniyle olabilir.");
+              }
+
+              // Modelin yanıtını al
+              const modelResponse = data.candidates[0].content.parts[0].text;
+              
+              // Modelin yanıtını geçmişe ekle (bizim uygulamamızda 'assistant' rolüyle)
+              messageHistory.push({ role: 'assistant', content: modelResponse });
+
+              // Sadece son yanıtı göstererek sohbet geçmişini yeniden oluştur
+              displayMessages();
+
+          } catch (error) {
+              responseContent.innerHTML += `<div class="message error"><strong>Hata:</strong> ${error.message}</div>`;
+          } finally {
+              // Butonu tekrar aktif et
+              document.querySelector('button').disabled = false;
+          }
+      }
+
+      function displayMessages() {
+          const responseContent = document.getElementById('responseContent');
+          // İlk mesaj ise "Henüz mesaj yok" yazısını temizle
+          if (messageHistory.length === 1) {
+              responseContent.innerHTML = '';
+          }
+          
+          responseContent.innerHTML = messageHistory.map(msg => 
+              `<div class="message">
+                   <strong class="message-role">${msg.role === 'user' ? 'Kullanıcı' : 'Asistan'}:</strong>
+                   <pre class="message-content">${msg.content}</pre>
+               </div>`
+          ).join('');
+
+          // Sayfayı en alta kaydır
+          responseContent.scrollTop = responseContent.scrollHeight;
+      }
+  </script>
+</body>
+</html>
