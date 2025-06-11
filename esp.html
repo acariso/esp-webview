@@ -295,14 +295,28 @@ input[type=range]#servoSlider::-webkit-slider-thumb {
         <div class="control-section">
             <h3>Yön Tuşları</h3>
             <div class="button-grid">
-                <div class="empty"></div>
-                <button id="ileri" class="button bcolor">İleri</button>
-                <div class="empty"></div>
-                <button id="sol" class="button bcolor">Sol</button>
-                <button id="dur" class="button bcolor" style="background-color: #dc3545;">DUR</button>
-                <button id="sag" class="button bcolor">Sağ</button>
-                <div class="empty"></div>
-                <button id="geri" class="button bcolor">Geri</button>
+                <<label class="radio-label" id="ileri-label">
+                        <input type="radio" name="yon" id="ileri" value="ileri">
+                        İleri
+                    </label>
+                    <div></div>
+                    <label class="radio-label" id="sol-label">
+                        <input type="radio" name="yon" id="sol" value="sol">
+                        Sol
+                    </label>
+                    <label class="radio-label" id="dur-label">
+                        <input type="radio" name="yon" id="dur" value="dur">
+                        DUR
+                    </label>
+                    <label class="radio-label" id="sag-label">
+                        <input type="radio" name="yon" id="sag" value="sag">
+                        Sağ
+                    </label>
+                    <div></div>
+                    <label class="radio-label" id="geri-label">
+                        <input type="radio" name="yon" id="geri" value="geri">
+                        Geri
+                    </label>
                 <div class="empty"></div>
             </div>
         </div>
