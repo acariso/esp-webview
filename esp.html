@@ -7,280 +7,358 @@
     <title>Wifi Robot Kontrol (MQTT)</title>
     <style>
         body {
-    background-color: #808080;
-    font-family: Arial, sans-serif;
-    text-align: center;
-    color: #333;
-    margin: 0;
-    padding: 10px;
-    transition: background-color 0.2s ease-out;
-}
+            background-color: #808080;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            color: #333;
+            margin: 0;
+            padding: 10px;
+            transition: background-color 0.2s ease-out;
+        }
 
-h2 {
-    color: #EEE;
-    text-shadow: 1px 1px 2px #333;
-}
+        h2 {
+            color: #EEE;
+            text-shadow: 1px 1px 2px #333;
+        }
 
-h3 {
-    color: #444;
-    margin-bottom: 10px;
-}
+        h3 {
+            color: #444;
+            margin-bottom: 10px;
+        }
 
-.container {
-    max-width: 300px; /* Küçültüldü */
-    margin: 20px auto;
-    background-color: #ffffff;
-    padding: 15px; /* Küçültüldü */
-    border-radius: 15px; /* Küçültüldü */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-}
+        .container {
+            max-width: 450px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
 
-.button-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px; /* Küçültüldü */
-    justify-items: center;
-    align-items: center;
-    margin-bottom: 10px;
-}
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            justify-items: center;
+            align-items: center;
+            margin-bottom: 10px;
+        }
 
-.button {
-    border: none;
-    color: white;
-    padding: 10px; /* Küçültüldü */
-    font-size: 16px; /* Küçültüldü */
-    cursor: pointer;
-    border-radius: 10px; /* Küçültüldü */
-    width: 80px; /* Küçültüldü */
-    height: 50px; /* Küçültüldü */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    user-select: none;
-}
+        .button {
+            border: none;
+            color: white;
+            padding: 15px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 12px;
+            width: 100px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+            user-select: none;
+        }
 
-.button:active {
-    transform: scale(0.9);
-}
+        .button:active {
+            transform: scale(0.9);
+        }
 
-.bcolor {
-    background-color: #28a745;
-}
+        .bcolor {
+            background-color: #28a745;
+        }
 
-.bcolor:hover {
-    background-color: #218838;
-}
+        .bcolor:hover {
+            background-color: #218838;
+        }
 
-.bcolor:active {
-    background-color: #1e7e34;
-}
+        .bcolor:active {
+            background-color: #1e7e34;
+        }
 
-.control-section {
-    border: 1px solid #ccc;
-    border-radius: 10px; /* Küçültüldü */
-    padding: 10px; /* Küçültüldü */
-    margin: 15px 0; /* Küçültüldü */
-    background-color: #f8f9fa;
-}
+        .control-section {
+            border: 1px solid #ccc;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 20px 0;
+            background-color: #f8f9fa;
+        }
 
-.settings-grid {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px; /* Küçültüldü */
-}
+        .settings-grid {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
 
-.control-item {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-}
+        .control-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
 
-.control-item label {
-    font-weight: bold;
-    margin-right: 5px; /* Küçültüldü */
-    color: #333;
-}
+        .control-item label {
+            font-weight: bold;
+            margin-right: 10px;
+            color: #333;
+        }
 
-.control-item input[type="checkbox"] {
-    transform: scale(1.2); /* Küçültüldü */
-    vertical-align: middle;
-    cursor: pointer;
-}
+        .control-item input[type="checkbox"] {
+            transform: scale(1.5);
+            vertical-align: middle;
+            cursor: pointer;
+        }
+        #turboCheckbox {
+            accent-color: #28a745;
+        }
 
-#turboCheckbox {
-    accent-color: #28a745;
-}
+        .toggle-button {
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 12px;
+            min-width: 180px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+            user-select: none;
+        }
+        .toggle-button:active {
+            transform: scale(0.95);
+        }
+        .toggle-button.off {
+            background-color: #007BFF;
+        }
+        .toggle-button.off:hover {
+            background-color: #0056b3;
+        }
+        .toggle-button.on {
+            background-color: #28a745;
+        }
+        .toggle-button.on:hover {
+            background-color: #218838;
+        }
 
-.toggle-button {
-    border: none;
-    color: white;
-    padding: 8px 12px; /* Küçültüldü */
-    font-size: 14px; /* Küçültüldü */
-    cursor: pointer;
-    border-radius: 10px; /* Küçültüldü */
-    min-width: 150px; /* Küçültüldü */
-    height: 40px; /* Küçültüldü */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    user-select: none;
-}
 
-.toggle-button:active {
-    transform: scale(0.95);
-}
+        #status {
+            margin-top: 10px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
 
-.toggle-button.off {
-    background-color: #007BFF;
-}
+        .servo-slider-modern-wrapper {
+            position: relative;
+            width: 90%;
+            height: 20px;
+            margin: 25px auto;
+            display: flex;
+            align-items: center;
+        }
 
-.toggle-button.off:hover {
-    background-color: #0056b3;
-}
+        input[type=range]#servoSlider {
+            -webkit-appearance: none;
+            appearance: none;
 
-.toggle-button.on {
-    background-color: #28a745;
-}
+            --slider-fill-color: #28a745;
+            --slider-track-bg: #F0F0F7;
+            --slider-segment-line: #D1D1D6;
+            --slider-border-color: #C7C7CC;
 
-.toggle-button.on:hover {
-    background-color: #218838;
-}
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: transparent;
+            background-image: repeating-linear-gradient(
+                to right,
+                var(--slider-track-bg),
+                var(--slider-track-bg) calc(16.666% - 1px),
+                var(--slider-segment-line) calc(16.666% - 1px),
+                var(--slider-segment-line) 16.666%
+            );
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 1px solid var(--slider-border-color);
+            box-shadow: inset 0 0.5px 1px rgba(0,0,0,0.05);
+        }
 
-#status {
-    margin-top: 10px;
-    margin-bottom: 15px;
-    font-weight: bold;
-    font-size: 1em; /* Küçültüldü */
-}
+        input[type=range]#servoSlider::-webkit-slider-runnable-track {
+            -webkit-appearance: none;
+            height: 100%;
+            background: transparent;
+            border-radius: 10px;
+        }
 
-.servo-slider-modern-wrapper {
-    position: relative;
-    width: 80%; /* Küçültüldü */
-    height: 20px;
-    margin: 20px auto; /* Küçültüldü */
-    display: flex;
-    align-items: center;
-}
+        input[type=range]#servoSlider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 1px;
+            height: 100%;
+            background: transparent;
+            border: none;
+            box-shadow: -450px 0 0 450px var(--slider-fill-color);
+            cursor: pointer;
+        }
 
-input[type=range]#servoSlider {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    background-color: transparent;
-    border-radius: 10px;
-    border: 1px solid #C7C7CC;
-}
+        input[type=range]#servoSlider::-moz-range-track {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border-radius: 10px;
+            border: none;
+        }
 
-input[type=range]#servoSlider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 16px; /* Küçültüldü */
-    height: 16px; /* Küçültüldü */
-    background: #FFFFFF;
-    border: 1.5px solid #28a745;
-    border-radius: 50%;
-    cursor: pointer;
-}
+        input[type=range]#servoSlider::-moz-range-thumb {
+            -moz-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #FFFFFF;
+            border: 1.5px solid var(--slider-fill-color);
+            border-radius: 50%;
+            cursor: pointer;
+            position: relative;
+            z-index: 10;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+            margin-top: calc((20px - 18px) / 2 - 1.5px);
+        }
 
-.servo-value-display {
-    margin-top: 10px; /* Küçültüldü */
-    font-size: 1em; /* Küçültüldü */
-    font-weight: 600;
-    color: #343A40;
-}
+        input[type=range]#servoSlider::-moz-range-progress {
+            background-color: var(--slider-fill-color);
+            height: 100%;
+            border-radius: 10px 0 0 10px;
+        }
+        input[type=range]#servoSlider[value="180"]::-moz-range-progress,
+        input[type=range]#servoSlider[value="0"]::-moz-range-progress {
+            border-radius: 10px;
+        }
 
-.servo-reset-button {
-    background-color: #dc3545;
-    color: white;
-    font-weight: 500;
-    border: none;
-    padding: 8px 15px; /* Küçültüldü */
-    font-size: 14px; /* Küçültüldü */
-    cursor: pointer;
-    border-radius: 8px; /* Küçültüldü */
-    margin-top: 15px; /* Küçültüldü */
-    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
-    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
-}
+        .servo-value-display {
+            margin-top: 12px;
+            font-size: 1.15em;
+            font-weight: 600;
+            color: #343A40;
+        }
 
-.servo-reset-button:hover {
-    background-color: #c82333;
-    box-shadow: 0 3px 6px rgba(220, 53, 69, 0.4);
-}
+        .servo-reset-button {
+            background-color: #dc3545;
+            color: white;
+            font-weight: 500;
+            border: none;
+            padding: 10px 20px;
+            font-size: 15px;
+            cursor: pointer;
+            border-radius: 8px;
+            margin-top: 18px;
+            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+            box-shadow: 0 3px 6px rgba(220, 53, 69, 0.3);
+        }
+        .servo-reset-button:hover {
+            background-color: #c82333;
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4);
+        }
+        .servo-reset-button:active {
+            background-color: #bd2130;
+            transform: scale(0.96);
+            box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+        }
+        #fireAlarm {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: red;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+            z-index: 10000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
 
-.servo-reset-button:active {
-    background-color: #bd2130;
-    transform: scale(0.96);
-    box-shadow: 0 1px 2px rgba(220, 53, 69, 0.2);
-}
+        @media (max-width: 768px) {
+            .container {
+                width: 90%;
+                padding: 15px;
+            }
+            .button-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .button {
+                width: 80px;
+                height: 50px;
+                font-size: 16px;
+            }
+            .toggle-button {
+                font-size: 15px;
+                min-width: 160px;
+                height: 45px;
+            }
+            .servo-slider-modern-wrapper {
+                height: 18px;
+            }
+            input[type=range]#servoSlider,
+            input[type=range]#servoSlider::-webkit-slider-runnable-track,
+            input[type=range]#servoSlider::-moz-range-track,
+            input[type=range]#servoSlider::-moz-range-progress {
+                border-radius: 9px;
+            }
+            input[type=range]#servoSlider::-moz-range-thumb {
+                width: 16px;
+                height: 16px;
+                margin-top: calc((18px - 16px) / 2 - 1.5px);
+            }
+             .servo-reset-button {
+                padding: 9px 18px;
+                font-size: 14px;
+            }
+        }
 
-#fireAlarm {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    background-color: red;
-    color: white;
-    text-align: center;
-    padding: 10px;
-    font-size: 1em; /* Küçültüldü */
-    font-weight: bold;
-    z-index: 10000;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-}
-
-@media (max-width: 768px) {
-    .container {
-        width: 90%;
-        padding: 10px; /* Küçültüldü */
-    }
-    .button-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    .button {
-        width: 70px; /* Küçültüldü */
-        height: 40px; /* Küçültüldü */
-        font-size: 14px; /* Küçültüldü */
-    }
-    .toggle-button {
-        font-size: 13px; /* Küçültüldü */
-        min-width: 140px; /* Küçültüldü */
-        height: 35px; /* Küçültüldü */
-    }
-    .servo-slider-modern-wrapper {
-        height: 18px;
-    }
-}
-
-@media (max-width: 480px) {
-    .button-grid {
-        grid-template-columns: 1fr;
-    }
-    .button {
-        width: 100%;
-    }
-    .toggle-button {
-        font-size: 12px; /* Küçültüldü */
-        min-width: 130px; /* Küçültüldü */
-        height: 30px; /* Küçültüldü */
-        width: 80%;
-    }
-    .servo-slider-modern-wrapper {
-        height: 16px;
-        width: 88%;
-    }
-}
-
+        @media (max-width: 480px) {
+            .button-grid {
+                grid-template-columns: 1fr;
+            }
+            .button {
+                width: 100%;
+            }
+            .toggle-button {
+                font-size: 14px;
+                min-width: 150px;
+                height: 40px;
+                width: 80%;
+            }
+            .servo-slider-modern-wrapper {
+                height: 16px;
+                width: 88%;
+            }
+            input[type=range]#servoSlider,
+            input[type=range]#servoSlider::-webkit-slider-runnable-track,
+            input[type=range]#servoSlider::-moz-range-track,
+            input[type=range]#servoSlider::-moz-range-progress {
+                border-radius: 8px;
+            }
+            input[type=range]#servoSlider::-moz-range-thumb {
+                width: 14px;
+                height: 14px;
+                 margin-top: calc((16px - 14px) / 2 - 1.5px);
+            }
+             .servo-reset-button {
+                padding: 8px 16px;
+                font-size: 13px;
+                margin-top: 15px;
+            }
+        }
     </style>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 </head>
@@ -295,28 +373,14 @@ input[type=range]#servoSlider::-webkit-slider-thumb {
         <div class="control-section">
             <h3>Yön Tuşları</h3>
             <div class="button-grid">
-                <<label class="radio-label" id="ileri-label">
-                        <input type="radio" name="yon" id="ileri" value="ileri">
-                        İleri
-                    </label>
-                    <div></div>
-                    <label class="radio-label" id="sol-label">
-                        <input type="radio" name="yon" id="sol" value="sol">
-                        Sol
-                    </label>
-                    <label class="radio-label" id="dur-label">
-                        <input type="radio" name="yon" id="dur" value="dur">
-                        DUR
-                    </label>
-                    <label class="radio-label" id="sag-label">
-                        <input type="radio" name="yon" id="sag" value="sag">
-                        Sağ
-                    </label>
-                    <div></div>
-                    <label class="radio-label" id="geri-label">
-                        <input type="radio" name="yon" id="geri" value="geri">
-                        Geri
-                    </label>
+                <div class="empty"></div>
+                <button id="ileri" class="button bcolor">İleri</button>
+                <div class="empty"></div>
+                <button id="sol" class="button bcolor">Sol</button>
+                <button id="dur" class="button bcolor" style="background-color: #dc3545;">DUR</button>
+                <button id="sag" class="button bcolor">Sağ</button>
+                <div class="empty"></div>
+                <button id="geri" class="button bcolor">Geri</button>
                 <div class="empty"></div>
             </div>
         </div>
